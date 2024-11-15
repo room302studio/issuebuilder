@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { animate, timeline } from '~/anime.esm.min.js'  // Import specific functions instead of default
+import { createAnimatable } from '~/anime.esm.min.js'
 
 const loading = ref(false)
 const toast = useToast()
@@ -95,98 +95,115 @@ const trustBadges = [
   { icon: 'heroicons:shield-check', text: 'Money Back Guarantee' }
 ]
 
-const PRODUCT_ID = 'prod_RDyn1tMw4jCP72'
+const PRODUCT_ID = 'price_your_stripe_price_id_here'
 
-// Animation timeline
+// Animation setup
 onMounted(() => {
-  const tl = timeline({
-    easing: 'easeOutCubic',
-    duration: 800
+  // Create animatables for each element
+  const headerAnimatable = createAnimatable(headerEl.value, {
+    opacity: 1,
+    translateY: 0,
+    duration: 800,
+    ease: 'outCubic'
   })
 
-  tl
-    .add({
-      targets: headerEl.value,
-      opacity: [0, 1],
-      translateY: [20, 0],
-      duration: 800
+  const cardAnimatable = createAnimatable(cardEl.value, {
+    opacity: 1,
+    translateY: 0,
+    duration: 800,
+    ease: 'outCubic'
+  })
+
+  const priceAnimatable = createAnimatable(priceEl.value, {
+    opacity: 1,
+    scale: 1,
+    duration: 600,
+    ease: 'outCubic'
+  })
+
+  // Feature list items
+  if (featureListEl.value?.children) {
+    Array.from(featureListEl.value.children).forEach((item, index) => {
+      createAnimatable(item, {
+        opacity: 1,
+        translateX: 0,
+        duration: 600,
+        delay: index * 100,
+        ease: 'outCubic'
+      })
     })
-    .add({
-      targets: cardEl.value,
-      opacity: [0, 1],
-      translateY: [40, 0],
-      duration: 800
-    }, '-=400')
-    .add({
-      targets: priceEl.value,
-      opacity: [0, 1],
-      scale: [0.95, 1],
-      duration: 600
-    }, '-=400')
-    .add({
-      targets: featureListEl.value?.children,
-      opacity: [0, 1],
-      translateX: [20, 0],
-      delay: 100, // Use number instead of stagger in v4
-      duration: 600
-    }, '-=400')
-    .add({
-      targets: buttonContainerEl.value,
-      opacity: [0, 1],
-      translateY: [20, 0],
-      duration: 600
-    }, '-=200')
-    .add({
-      targets: trustBadgesEl.value,
-      opacity: [0, 1],
-      translateY: [20, 0],
-      duration: 600
-    }, '-=400')
+  }
+
+  // Button and badges
+  const buttonAnimatable = createAnimatable(buttonContainerEl.value, {
+    opacity: 1,
+    translateY: 0,
+    duration: 600,
+    ease: 'outCubic'
+  })
+
+  const trustBadgesAnimatable = createAnimatable(trustBadgesEl.value, {
+    opacity: 1,
+    translateY: 0,
+    duration: 600,
+    ease: 'outCubic'
+  })
+
+  // Trigger animations
+  headerAnimatable.opacity(1)
+  headerAnimatable.translateY(0)
+
+  setTimeout(() => {
+    cardAnimatable.opacity(1)
+    cardAnimatable.translateY(0)
+  }, 200)
+
+  setTimeout(() => {
+    priceAnimatable.opacity(1)
+    priceAnimatable.scale(1)
+  }, 400)
+
+  setTimeout(() => {
+    buttonAnimatable.opacity(1)
+    buttonAnimatable.translateY(0)
+  }, 600)
+
+  setTimeout(() => {
+    trustBadgesAnimatable.opacity(1)
+    trustBadgesAnimatable.translateY(0)
+  }, 800)
 })
 
-// Checkout handler
+// Update checkout handler
 const handleCheckout = async () => {
   loading.value = true
 
-  // Animate button when loading
-  animate({
-    targets: buttonContainerEl.value,
-    scale: [1, 0.98],
-    duration: 300,
-    easing: 'easeInOutQuad'
-  })
-
   try {
-    const { data: session } = await useFetch('/api/create-checkout-session', {
-      method: 'POST',
-      body: {
-        productId: PRODUCT_ID,
-        successUrl: `${config.public.SITE_URL}/checkout/success`,
-        cancelUrl: `${config.public.SITE_URL}/checkout`
-      }
+    console.log('Starting checkout process...')
+
+    const { data, error } = await useFetch('/api/create-checkout-session', {
+      method: 'POST'
     })
 
-    if (!session?.id) {
-      throw new Error('Failed to create checkout session')
+    console.log('Checkout response:', { data, error })
+
+    if (error.value) {
+      throw new Error(`API Error: ${error.value.message}`)
     }
 
-    if (stripe.value) {
-      await stripe.value.redirectToCheckout({
-        sessionId: session.id
-      })
+    if (!data.value?.url) {
+      throw new Error('No checkout URL returned from API')
     }
+
+    // Redirect to Stripe Checkout
+    console.log('Redirecting to:', data.value.url)
+    window.location.href = data.value.url
+
   } catch (error) {
-    // Animate button back to normal
-    animate({
-      targets: buttonContainerEl.value,
-      scale: 1,
-      duration: 300,
-      easing: 'easeOutQuad'
-    })
-
+    console.error('Detailed checkout error:', error)
     toast.add({
-      title: 'Error',
-      description: error.message,
+      title: 'Checkout Error',
+      description: error instanceof Error ? error.message : 'Failed to start checkout',
       color: 'red'
     })
   } finally {

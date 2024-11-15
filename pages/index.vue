@@ -1,108 +1,112 @@
 <template>
-  <div class="relative grid grid-cols-1 lg:grid-cols-[1fr,280px] gap-6 max-w-6xl mx-auto p-4 md:p-6 dark:bg-gray-900">
+  <div
+    class="relative grid grid-cols-1 lg:grid-cols-[1fr,280px] gap-6 max-w-6xl mx-auto p-4 md:p-6 pt-[10vh] dark:bg-gray-900">
     <div class="max-w-2xl">
-      <h1 class="text-2xl font-bold mb-4 dark:text-white">Document to Issues Parser</h1>
+      <h1 class="text-2xl font-bold mb-[8vh] dark:text-white">Document to Issues Parser</h1>
 
       <!-- Document Input -->
       <div class="mb-6">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
           Paste your document here
         </label>
         <textarea v-model="documentText"
-          class="w-full h-48 p-3 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+          class="w-full h-[30vh] p-3 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white"
           :disabled="isProcessing" placeholder="Paste your document text here..." />
       </div>
 
-      <!-- API Key Input -->
-      <div class="mb-4">
-        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2 gap-2">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            OpenRouter API Key
-          </label>
-          <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer"
-            class="text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1">
-            Get your key
-            <Icon name="heroicons:arrow-top-right-on-square" class="w-4 h-4" />
-          </a>
-        </div>
-        <div class="relative">
-          <input v-model="apiKey" :type="showApiKey ? 'text' : 'password'"
-            class="w-full p-2 border rounded-md pr-10 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-            placeholder="Enter your API key" />
-          <button @click="showApiKey = !showApiKey"
-            class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
-            <UIcon :name="showApiKey ? 'heroicons:eye-slash' : 'heroicons:eye'" class="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      <!-- Model Selector -->
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Model
-        </label>
-        <select v-model="selectedModel"
-          class="w-full p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-          :disabled="isProcessing">
-          <option v-for="[id, config] in Object.entries(MODEL_CONFIGS)" :key="id" :value="id">
-            {{ config.name }}
-          </option>
-        </select>
-
-        <!-- Model Info -->
-        <div v-if="selectedModelInfo" class="mt-2 space-y-2">
-          <div class="flex flex-wrap gap-2">
-            <span v-if="selectedModelInfo.pricing?.prompt"
-              class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-              Input: ${{ formatPrice(selectedModelInfo.pricing.prompt) }}/1K tokens
-            </span>
-            <span v-if="selectedModelInfo.pricing?.completion"
-              class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-300">
-              Output: ${{ formatPrice(selectedModelInfo.pricing.completion) }}/1K tokens
-            </span>
-            <span v-if="selectedModelInfo.context_length"
-              class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
-              Context: {{ formatNumber(selectedModelInfo.context_length) }} tokens
-            </span>
+      <!-- Configuration Section -->
+      <div
+        class="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-lg space-y-4">
+        <!-- API Key Input -->
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-sm font-medium text-gray-600 dark:text-gray-300">
+              OpenRouter API Key
+            </label>
+            <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer"
+              class="text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400 flex items-center gap-1">
+              Get your key
+              <Icon name="heroicons:arrow-top-right-on-square" class="w-4 h-4" />
+            </a>
           </div>
-          <p class="text-sm text-gray-500 dark:text-gray-400">
-            {{ selectedModelInfo.description }}
-          </p>
+          <div class="relative">
+            <input v-model="apiKey" :type="showApiKey ? 'text' : 'password'"
+              class="w-full p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md"
+              placeholder="Enter your API key" />
+            <UButton @click="showApiKey = !showApiKey" icon="i-heroicons-eye" color="gray" variant="ghost"
+              class="absolute right-2 top-1/2 -translate-y-1/2">
+              <UIcon :name="showApiKey ? 'heroicons:eye-slash' : 'heroicons:eye'" />
+            </UButton>
+          </div>
+        </div>
+
+        <!-- Model Selector -->
+        <div>
+          <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+            Model
+          </label>
+          <select v-model="selectedModel"
+            class="w-full p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md"
+            :disabled="isProcessing">
+            <option v-for="[id, config] in Object.entries(MODEL_CONFIGS)" :key="id" :value="id">
+              {{ config.name }}
+            </option>
+          </select>
+
+          <!-- Model Info -->
+          <div v-if="selectedModelInfo" class="mt-2 space-y-2">
+            <div class="flex flex-wrap gap-2">
+              <span v-if="selectedModelInfo.pricing?.prompt" class="text-xs text-gray-500 dark:text-gray-400">
+                Input: ${{ formatPrice(selectedModelInfo.pricing.prompt) }}/1K tokens
+              </span>
+              <span v-if="selectedModelInfo.pricing?.completion" class="text-xs text-gray-500 dark:text-gray-400">
+                Output: ${{ formatPrice(selectedModelInfo.pricing.completion) }}/1K tokens
+              </span>
+              <span v-if="selectedModelInfo.context_length" class="text-xs text-gray-500 dark:text-gray-400">
+                Context: {{ formatNumber(selectedModelInfo.context_length) }} tokens
+              </span>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              {{ selectedModelInfo.description }}
+            </p>
+          </div>
         </div>
       </div>
 
       <!-- Process Button with Cancel -->
-      <div class="flex flex-col sm:flex-row gap-2 mb-6">
-        <button v-if="!isProcessing" @click="processDocument" :disabled="!documentText || !apiKey"
-          class="flex-1 bg-blue-500 text-white p-3 rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed dark:disabled:bg-gray-700">
+      <div class="w-full mb-8">
+        <UButton v-if="!isProcessing" @click="processDocument" :disabled="!documentText || !apiKey" color="primary"
+          size="xl" block class="flex items-center justify-center gap-2">
+          <Icon name="heroicons:sparkles" class="w-6 h-6" />
           Generate Issues
-        </button>
-        <button v-else @click="cancelGeneration" class="flex-1 bg-red-500 text-white p-3 rounded-md hover:bg-red-600">
+        </UButton>
+        <UButton v-else @click="cancelGeneration" color="red" size="xl" block
+          class="flex items-center justify-center gap-2">
+          <Icon name="heroicons:x-circle" class="w-6 h-6" />
           Cancel Generation
-        </button>
+        </UButton>
       </div>
 
       <!-- Error Display -->
-      <div v-if="error" class="mb-6 p-4 bg-red-50 text-red-600 rounded-md">
+      <div v-if="error" class="mb-[8vh] p-6 bg-red-50 text-red-600 rounded-md">
         {{ error.message }}
       </div>
 
       <!-- Issues Display -->
-      <div v-if="store.itemList.value.length || loadingSkeletons.length" class="space-y-4">
+      <div v-if="store.itemList.value.length || loadingSkeletons.length" class="space-y-[6vh]">
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
           <div>
             <h2 class="text-xl font-semibold dark:text-white">Generated Issues</h2>
             <p class="text-sm text-gray-600 dark:text-gray-400">Total: {{ store.itemList.value.length }}</p>
           </div>
-          <button @click="store.itemList.value = []"
-            class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+          <UButton @click="clearAllIssues" color="gray" variant="ghost" size="sm">
             Clear All
-          </button>
+          </UButton>
         </div>
 
         <!-- Issue Cards -->
-        <div class="space-y-4">
-          <TransitionGroup name="issue" tag="div" class="space-y-4">
+        <div class="space-y-[4vh]">
+          <TransitionGroup name="issue" tag="div" class="space-y-[4vh]">
             <!-- Loading skeletons - Only show if no real issues exist -->
             <div v-if="!hasRealIssues" v-for="(_, index) in loadingSkeletons" :key="`skeleton-${index}`"
               class="p-4 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700">
@@ -197,49 +201,56 @@
           </TransitionGroup>
         </div>
 
-        <!-- Generate More Button -->
-        <div v-if="!isProcessing" class="space-y-4">
+        <!-- Generate More UButton -->
+        <div v-if="!isProcessing" class="space-y-[6vh] mt-[12vh]">
           <!-- Custom Prompt Input -->
-          <div v-if="showCustomPrompt" class="p-4 border rounded-md bg-gray-50">
+          <div v-if="showCustomPrompt" class="p-4 border rounded-md bg-gray-50 max-w-2xl">
             <div class="flex justify-between items-center mb-2">
               <label class="text-sm font-medium text-gray-700">Custom Generation Prompt</label>
-              <button @click="showCustomPrompt = false" class="text-gray-400 hover:text-gray-600">
-                <Icon name="heroicons:x-mark" class="w-5 h-5" />
-              </button>
+              <UButton @click="showCustomPrompt = false" color="gray" variant="ghost" icon="i-heroicons-x-mark">
+                <Icon name="heroicons:x-mark" />
+              </UButton>
             </div>
             <textarea v-model="customPrompt" class="w-full h-24 p-2 border rounded-md mb-2 text-sm"
               placeholder="E.g.: Focus on performance issues, or Generate issues related to accessibility..." />
-            <button @click="generateMoreWithPrompt" :disabled="!customPrompt.trim()"
-              class="w-full bg-purple-500 text-white p-2 rounded-md hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
+            <UButton @click="generateMoreWithPrompt" :disabled="!customPrompt.trim()" color="purple">
               Generate Issues with Prompt
-            </button>
+            </UButton>
           </div>
 
-          <!-- Action Buttons -->
-          <div class="flex gap-2">
-            <button v-if="!showCustomPrompt" @click="showCustomPrompt = true"
-              class="flex-1 p-3 border-2 border-purple-500 text-purple-500 rounded-md hover:bg-purple-50 transition-colors">
+          <!-- Action UButtons -->
+          <div class="flex gap-2 max-w-lg">
+            <UButton v-if="!showCustomPrompt" @click="showCustomPrompt = true" color="purple" variant="outline">
               Generate with Custom Prompt...
-            </button>
-            <button @click="generateMore"
-              class="flex-1 p-3 border-2 border-blue-500 text-blue-500 rounded-md hover:bg-blue-50 transition-colors">
+            </UButton>
+            <UButton @click="generateMore" color="primary" variant="outline">
               Generate More Issues...
-            </button>
+            </UButton>
           </div>
+        </div>
+
+        <!-- Add this after the Generate More section, but still inside the Issues Display div -->
+        <div v-if="store.itemList.value.length" class="mt-[12vh] border-t border-gray-200 dark:border-gray-700 pt-8">
+          <UButton size="2xl" block :disabled="true" color="gray" class="relative overflow-hidden">
+            <div class="flex items-center justify-center gap-3">
+              <Icon name="simple-icons:github" class="w-8 h-8" />
+              <span class="text-lg font-medium">Send to GitHub Repository</span>
+            </div>
+            <div class="absolute inset-0 bg-gray-900/10 dark:bg-gray-100/10 flex items-center justify-center">
+              <div class="px-3 py-1 bg-gray-900/90 dark:bg-gray-100/90 rounded-full">
+                <span class="text-xs font-medium text-white dark:text-gray-900">Coming Soon</span>
+              </div>
+            </div>
+          </UButton>
         </div>
       </div>
 
-      <!-- Debug info -->
-      <div class="text-xs text-gray-500 mt-2">
-        isProcessing: {{ isProcessing }}
-        hasDocument: {{ Boolean(documentText.value) }}
-        hasApiKey: {{ Boolean(apiKey.value) }}
-      </div>
+
     </div>
 
     <!-- Table of Contents -->
     <div v-if="store.itemList.value.length"
-      class="hidden lg:block sticky top-4 h-fit max-h-[calc(100vh-2rem)] overflow-y-auto rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+      class="hidden lg:block sticky top-[5vh] h-fit max-h-[90vh] overflow-y-auto rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
       <div class="mb-3 flex items-center justify-between">
         <h3 class="font-medium text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           Issues Overview
@@ -262,6 +273,16 @@
         </li>
       </ul>
     </div>
+  </div>
+
+  <!-- Add this right before the closing </template> tag -->
+  <div class="mt-[12vh] pb-[8vh] text-center">
+    <a href="https://room302.studio" target="_blank" rel="noopener noreferrer"
+      class="inline-flex items-center gap-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400 transition-colors">
+      <img src="https://room302.studio/room302-logo.svg" alt="Room 302 Studio"
+        class="w-6 h-6 opacity-50 grayscale hover:opacity-75 hover:grayscale-0 transition-all" />
+      <span class="text-sm font-medium">Built by Room 302 Studio</span>
+    </a>
   </div>
 </template>
 
@@ -421,8 +442,14 @@ async function processDocument() {
 const combiningIndices = ref<number[]>([])
 const splitIssues = ref<Partial<Issue>[]>([{}, {}])
 
-// Update handleSplit function to properly manage these refs
+// Update handleSplit function with the complete implementation
 async function handleSplit(issue: Issue, index: number) {
+  // Track split attempt
+  clickhouse.insertEvent('issue-split-start', 1, {
+    issueTitle: issue.title,
+    issueLength: issue.body.length
+  })
+
   try {
     toast.add({
       title: 'Splitting Issue',
@@ -437,11 +464,103 @@ async function handleSplit(issue: Issue, index: number) {
     combiningIndices.value = [index]
     splitIssues.value = [{}, {}]
 
-    // Rest of the existing handleSplit code...
+    // Store original issue and its index
+    const originalIssue = { ...issue }
+    const originalIndex = index
+
+    // Generate split prompt
+    const splitPrompt = [
+      {
+        role: 'system',
+        content: `You are an expert at splitting GitHub issues into smaller, more focused issues. 
+        Split the following issue into exactly 2 separate issues using XML tags:
+        
+        <IssueTitle>Title for first issue</IssueTitle>
+        <IssueText>Description for first issue</IssueText>
+        
+        <IssueTitle>Title for second issue</IssueTitle>
+        <IssueText>Description for second issue</IssueText>`
+      },
+      {
+        role: 'user',
+        content: `Please split this issue into two separate, focused issues:\n\nTitle: ${issue.title}\n\nDescription: ${issue.body}`
+      }
+    ]
+
+    let newIssues: Issue[] = []
+
+    // Intercept new issues
+    const addItemOriginal = store.addItem
+    store.addItem = (newIssue) => {
+      newIssues.push({
+        ...newIssue,
+        history: {
+          splitFrom: {
+            title: originalIssue.title,
+            body: originalIssue.body
+          },
+          splitAt: new Date().toISOString()
+        }
+      })
+
+      // Update splitIssues for animation
+      if (newIssues.length <= 2) {
+        splitIssues.value[newIssues.length - 1] = newIssues[newIssues.length - 1]
+      }
+
+      // Only update store after we have both issues
+      if (newIssues.length === 2) {
+        // Remove the original issue
+        store.itemList.value.splice(originalIndex, 1)
+
+        // Add both new issues at the original position
+        store.itemList.value.splice(originalIndex, 0, ...newIssues)
+
+        // Restore original function
+        store.addItem = addItemOriginal
+      }
+    }
+
+    // Generate split issues
+    await streamIssues(
+      apiKey.value,
+      splitPrompt,
+      false,
+      store.selectedModel
+    )
+
+    // After successful split
+    toast.remove(`split-${index}`)
+    toast.add({
+      title: 'Issue Split',
+      description: 'Successfully split into two new issues',
+      icon: 'i-heroicons-check-circle',
+      color: 'green'
+    })
+
+    // Track successful split
+    clickhouse.insertEvent('issue-split-complete', 1, {
+      originalTitle: issue.title,
+      newIssuesCount: 2
+    })
+
   } catch (err) {
-    // Error handling...
+    console.error('Error splitting issue:', err)
+    toast.remove(`split-${index}`)
+    toast.add({
+      title: 'Split Failed',
+      description: 'Failed to split issue. Original issue restored.',
+      icon: 'i-heroicons-x-circle',
+      color: 'red'
+    })
+
+    // Track split error
+    clickhouse.insertEvent('issue-split-error', 1, {
+      issueTitle: issue.title,
+      error: err.message
+    })
   } finally {
-    // Clear the refs
+    // Clear the animation state
     combiningIndices.value = []
     splitIssues.value = [{}, {}]
   }
@@ -549,6 +668,17 @@ const displayedIssues = computed(() => {
 const hasRealIssues = computed(() => {
   return displayedIssues.value.length > 0
 })
+
+// Add this function to the script section
+function clearAllIssues() {
+  // Clear the store items
+  store.itemList.value = []
+  // Clear loading skeletons
+  loadingSkeletons.value = []
+  // Reset any splitting state
+  combiningIndices.value = []
+  splitIssues.value = [{}, {}]
+}
 </script>
 
 <style>
@@ -650,5 +780,17 @@ const hasRealIssues = computed(() => {
 
 [key="skeleton-2"] {
   animation-delay: 0.2s;
+}
+
+/* Ensure the page has a min-height and the footer stays at bottom */
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-wrapper {
+  flex: 1;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 </style>
