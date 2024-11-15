@@ -21,6 +21,11 @@
 </template>
 
 <script setup lang="ts">
+// Force the default layout
+definePageMeta({
+  layout: 'default'
+})
+
 const supabase = useSupabaseClient()
 const config = useRuntimeConfig()
 const loading = ref(false)

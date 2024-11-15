@@ -1,10 +1,14 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <NavBar />
-    <slot />
+    <main>
+      <slot />
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-// No setup needed
+defineComponent({
+  name: 'DefaultLayout'
+})
 </script>
