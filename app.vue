@@ -1,12 +1,17 @@
 <template>
-  <div>
-    <NuxtLayout>
+  <div id="app">
+    <NuxtLayout name="default">
       <NuxtPage />
     </NuxtLayout>
   </div>
 </template>
 
 <script setup>
+// Force default layout
+definePageMeta({
+  layout: 'default'
+})
+
 useHead({
   title: 'IssueBuilder - AI-Powered GitHub Issue Generator',
   titleTemplate: '%s | IssueBuilder',
@@ -22,5 +27,9 @@ useHead({
 <style>
 body {
   font-family: 'Figtree', sans-serif;
+}
+
+#app {
+  min-height: 100vh;
 }
 </style>
