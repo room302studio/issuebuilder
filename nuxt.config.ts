@@ -53,5 +53,15 @@ export default defineNuxtConfig({
     cookieOptions: {
       secure: process.env.NODE_ENV === 'production'
     }
+  },
+  vite: {
+    optimizeDeps: {
+      include: ['marked']
+    },
+    build: {
+      rollupOptions: {
+        external: process.env.NODE_ENV === 'development' ? [] : ['marked']
+      }
+    }
   }
 });
