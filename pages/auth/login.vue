@@ -21,11 +21,6 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({
-  layout: 'default',
-  middleware: ['auth']
-})
-
 const supabase = useSupabaseClient()
 const config = useRuntimeConfig()
 const loading = ref(false)
