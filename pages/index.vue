@@ -4,6 +4,14 @@
     <div class="max-w-2xl">
       <h1 class="text-2xl font-bold mb-[8vh] dark:text-white">Document to Issues Parser</h1>
 
+      <div id="intro" class="mb-[8vh] prose dark:prose-invert prose-xl">
+        <p>
+          I often find myself with a well-defined development plan, and I need to turn it into a bunch of issues in
+          GitHub for myself or my team to execute on. This seems like a task that is perfect for the LLMs, so the team a
+          <a class="text-orange-500 bold" href="https://room302.studio">Room 302 Studio</a> created this tool.
+        </p>
+      </div>
+
       <!-- Document Input -->
       <div class="mb-6">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
@@ -306,7 +314,7 @@
     <a href="https://room302.studio" target="_blank" rel="noopener noreferrer"
       class="inline-flex items-center gap-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400 transition-colors">
       <img src="https://room302.studio/room302-logo.svg" alt="Room 302 Studio"
-        class="w-6 h-6 opacity-50 grayscale hover:opacity-75 hover:grayscale-0 transition-all" />
+        class="w-16 h-16 opacity-50 grayscale hover:opacity-75 hover:grayscale-0 transition-all" />
       <span class="text-sm font-medium">Built by Room 302 Studio</span>
     </a>
   </div>

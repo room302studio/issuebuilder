@@ -1,11 +1,13 @@
 export default defineNuxtRouteMiddleware((to) => {
-  // Skip auth check for login and confirm pages
-  if (to.path === '/auth/login' || to.path === '/auth/confirm') {
+  const user = useSupabaseUser()
+
+  // Skip middleware for excluded routes
+  const excludedRoutes = ['/auth/login', '/auth/confirm']
+  if (excludedRoutes.includes(to.path)) {
     return
   }
 
-  const user = useSupabaseUser()
-
+  // Redirect to login if not authenticated
   if (!user.value) {
     return navigateTo('/auth/login')
   }

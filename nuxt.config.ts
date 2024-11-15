@@ -79,17 +79,5 @@ export default defineNuxtConfig({
   },
   experimental: {
     payloadExtraction: false
-  },
-  hooks: {
-    'pages:extend': (pages) => {
-      pages.forEach(page => {
-        if (page.path === '/') {
-          page.middleware = page.middleware || []
-          if (Array.isArray(page.middleware)) {
-            page.middleware.push('manifest-route-rule')
-          }
-        }
-      })
-    }
   }
 });

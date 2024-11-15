@@ -1,41 +1,36 @@
 <template>
-  <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+  <nav class="border-b border-gray-200 dark:border-gray-800">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between h-16">
-        <!-- Left side -->
-        <div class="flex">
-          <div class="flex-shrink-0 flex items-center">
-            <NuxtLink to="/" class="text-gray-900 dark:text-white font-semibold">
-              Issue Builder
-            </NuxtLink>
-          </div>
-        </div>
+      <div class="flex justify-between h-16 items-center">
+        <!-- Logo -->
+        <NuxtLink to="/" class="font-semibold">
+          Issue Builder
+        </NuxtLink>
 
         <!-- Right side -->
         <div class="flex items-center gap-4">
           <!-- Subscription Status -->
-          <div v-if="loading" class="animate-pulse">
-            <div class="h-6 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          </div>
+          <USkeleton v-if="loading" class="h-6 w-24" />
 
           <template v-else>
-            <div v-if="hasActiveSubscription"
-              class="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-              <Icon name="heroicons:check-badge" class="w-5 h-5" />
+            <div v-if="hasActiveSubscription" class="text-sm text-green-500">
               <span>Lifetime Access</span>
             </div>
-            <UButton to="/checkout" color="primary" size="sm" variant="soft">
-              Upgrade to Pro
+            <UButton v-else to="/checkout" color="primary" variant="soft" size="sm">
+              Upgrade
             </UButton>
           </template>
 
           <!-- User Menu -->
-          <UDropdown :items="userMenuItems">
-            <UButton color="gray" variant="ghost" class="gap-2">
-              <Icon name="heroicons:user-circle" class="w-5 h-5" />
-              {{ user?.email || 'Menu' }}
+          <UDropdown v-if="user" :items="menuItems" :popper="{ placement: 'bottom-end' }">
+            <UButton color="white" trailing-icon="i-heroicons-chevron-down-20-solid">
+              {{ user.email }}
             </UButton>
           </UDropdown>
+
+          <UButton v-else to="/auth/login" color="gray" variant="ghost">
+            Sign In
+          </UButton>
         </div>
       </div>
     </div>
@@ -43,39 +38,32 @@
 </template>
 
 <script setup lang="ts">
-const supabase = useSupabaseClient()
 const user = useSupabaseUser()
+const supabase = useSupabaseClient()
 
 const loading = ref(true)
 const hasActiveSubscription = ref(false)
 
-// Menu items
-const userMenuItems = computed(() => {
-  const items = []
-
-  if (user.value) {
-    items.push(
-      {
-        label: 'Sign Out',
-        icon: 'i-heroicons-arrow-right-on-rectangle',
-        click: () => supabase.auth.signOut()
-      }
-    )
-  } else {
-    items.push(
-      {
-        label: 'Sign In',
-        icon: 'i-heroicons-arrow-right-on-rectangle',
-        to: '/auth/login'
-      }
-    )
-  }
-
-  return items
-})
+// Menu items grouped as per Nuxt UI docs
+const menuItems = computed(() => [
+  [{
+    label: user.value?.email,
+    avatar: user.value?.user_metadata?.avatar_url ? {
+      src: user.value.user_metadata.avatar_url
+    } : undefined
+  }],
+  [{
+    label: 'Sign Out',
+    icon: 'i-heroicons-arrow-right-on-rectangle-20-solid',
+    click: async () => {
+      await supabase.auth.signOut()
+      navigateTo('/auth/login')
+    }
+  }]
+])
 
 // Check subscription status
-async function checkSubscription() {
+const checkSubscription = async () => {
   if (!user.value) {
     loading.value = false
     return
@@ -105,8 +93,5 @@ async function checkSubscription() {
   }
 }
 
-// Watch for user changes
-watch(user, () => {
-  checkSubscription()
-}, { immediate: true })
+watch(user, checkSubscription, { immediate: true })
 </script>
