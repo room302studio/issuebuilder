@@ -18,10 +18,10 @@ export default defineNuxtConfig({
     },
     preset: 'netlify'
   },
-  routeRules: {
-    '/**': { cache: { swr: true } }
-  },
-  ssr: false,
+  // routeRules: {
+  //   '/**': { cache: { swr: true } }
+  // },
+  ssr: true,
   devtools: { enabled: true },
   modules: [
     '@nuxtjs/supabase',
