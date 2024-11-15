@@ -15,12 +15,13 @@ export default defineNuxtConfig({
   nitro: {
     future: {
       nativeSWR: true
-    }
+    },
+    preset: 'netlify'
   },
   routeRules: {
     '/**': { cache: { swr: true } }
   },
-  ssr: false, // for netlify deploy
+  ssr: false,
   devtools: { enabled: true },
   modules: [
     '@nuxtjs/supabase',
@@ -63,5 +64,8 @@ export default defineNuxtConfig({
         external: process.env.NODE_ENV === 'development' ? [] : ['marked']
       }
     }
+  },
+  experimental: {
+    payloadExtraction: false
   }
 });
