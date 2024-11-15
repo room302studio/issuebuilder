@@ -1,16 +1,23 @@
 <template>
   <div :id="`issue-${index}`"
-    class="p-4 border rounded-md group relative bg-white dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:shadow-md transition-all scroll-mt-4"
+    class="p-6 border rounded-md group relative bg-white dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:shadow-md transition-all scroll-mt-4"
     :class="{
       'animate-new-issue': issue.history?.splitFrom || issue.history?.combinedFrom,
       'animate-fade-out': issue.skeleton && hasRealIssues
     }">
     <div class="flex justify-between items-start">
       <div class="flex-1">
-        <div class="flex items-center gap-2">
-          <h3 class="font-medium text-lg dark:text-white">
-            {{ issue.title }}
-          </h3>
+        <div class="flex items-center gap-2 mb-4">
+          <div class="flex-1">
+            <div v-if="!editingTitle" @click="startEditingTitle"
+              class="font-medium text-lg dark:text-white relative inline-block after:absolute after:bottom-0 after:left-0 after:w-full after:h-px after:bg-gray-200 dark:after:bg-gray-700 pb-2 cursor-text hover:text-blue-600 dark:hover:text-blue-400">
+              {{ issue.title }}
+            </div>
+            <input v-else v-model="editableTitle" ref="titleInput" @blur="stopEditingTitle"
+              @keydown.enter="stopEditingTitle" @keydown.esc="cancelEditingTitle"
+              class="w-full font-medium text-lg bg-transparent border-b-2 border-blue-500 dark:text-white focus:outline-none"
+              type="text" />
+          </div>
           <!-- Combined from badge -->
           <span v-if="issue.history?.combinedFrom"
             class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
@@ -19,7 +26,7 @@
             <Icon name="heroicons:arrows-pointing-in-mini" class="w-4 h-4 ml-1" />
           </span>
         </div>
-        <p v-if="issue.history?.combinedFrom" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        <p v-if="issue.history?.combinedFrom" class="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-4">
           from: {{ combinedFromTitles }}
         </p>
       </div>
@@ -37,7 +44,12 @@
       </div>
     </div>
 
-    <div class="prose prose-sm max-w-none text-gray-600 dark:text-gray-300 dark:prose-invert" v-html="renderedBody" />
+    <!-- Editable body -->
+    <div v-if="!editingBody" @click="startEditingBody"
+      class="prose prose-sm max-w-none text-gray-600 dark:text-gray-300 dark:prose-invert mt-4 cursor-text hover:text-blue-600 dark:hover:text-blue-400"
+      v-html="renderedBody" />
+    <textarea v-else v-model="editableBody" ref="bodyInput" @blur="stopEditingBody" @keydown.esc="cancelEditingBody"
+      class="w-full min-h-[100px] bg-transparent border-2 border-blue-500 rounded p-2 text-gray-600 dark:text-gray-300 focus:outline-none mt-4" />
 
     <p v-if="issue.history?.splitFrom"
       class="mt-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-2">
@@ -68,6 +80,7 @@
 import type { Issue } from '~/types'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { useDebounce } from '@vueuse/core'
 
 const props = defineProps<{
   issue: Issue
@@ -78,7 +91,72 @@ const props = defineProps<{
 const emit = defineEmits<{
   remove: []
   split: []
+  update: [issue: Issue]
 }>()
+
+// Editing state
+const editingTitle = ref(false)
+const editingBody = ref(false)
+const editableTitle = ref(props.issue.title)
+const editableBody = ref(props.issue.body)
+const titleInput = ref<HTMLInputElement>()
+const bodyInput = ref<HTMLTextAreaElement>()
+
+// Debounced update function
+const debouncedUpdate = useDebounce((newValue: Partial<Issue>) => {
+  emit('update', { ...props.issue, ...newValue })
+}, 300)
+
+// Title editing
+function startEditingTitle() {
+  editingTitle.value = true
+  editableTitle.value = props.issue.title
+  nextTick(() => titleInput.value?.focus())
+}
+
+function stopEditingTitle() {
+  if (editingTitle.value && editableTitle.value.trim()) {
+    editingTitle.value = false
+    debouncedUpdate({ title: editableTitle.value })
+  }
+}
+
+function cancelEditingTitle() {
+  editingTitle.value = false
+  editableTitle.value = props.issue.title
+}
+
+// Body editing
+function startEditingBody() {
+  editingBody.value = true
+  editableBody.value = props.issue.body
+  nextTick(() => bodyInput.value?.focus())
+}
+
+function stopEditingBody() {
+  if (editingBody.value && editableBody.value.trim()) {
+    editingBody.value = false
+    debouncedUpdate({ body: editableBody.value })
+  }
+}
+
+function cancelEditingBody() {
+  editingBody.value = false
+  editableBody.value = props.issue.body
+}
+
+// Watch for external updates
+watch(() => props.issue.title, (newTitle) => {
+  if (!editingTitle.value) {
+    editableTitle.value = newTitle
+  }
+})
+
+watch(() => props.issue.body, (newBody) => {
+  if (!editingBody.value) {
+    editableBody.value = newBody
+  }
+})
 
 // Markdown rendering
 const renderedBody = computed(() => {
@@ -296,5 +374,17 @@ div:nth-child(5) .animate-flutter {
 
 .animate-fade-out {
   animation: fade-out 0.3s ease-out forwards;
+}
+
+/* Add these styles for better editing experience */
+input,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.hover\:text-blue-600:hover {
+  transition: color 0.2s ease;
 }
 </style>

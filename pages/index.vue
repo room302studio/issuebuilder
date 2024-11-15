@@ -12,6 +12,11 @@
         <textarea v-model="documentText"
           class="w-full h-[30vh] p-3 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white"
           :disabled="isProcessing" placeholder="Paste your document text here..." />
+        <div class="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+          <span>{{ characterCount }} characters</span>
+          <span>Press <kbd class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700">⌘/Ctrl</kbd> + <kbd
+              class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700">Enter</kbd> to generate</span>
+        </div>
       </div>
 
       <!-- Configuration Section -->
@@ -30,12 +35,12 @@
             </a>
           </div>
           <div class="relative">
-            <input v-model="apiKey" :type="showApiKey ? 'text' : 'password'"
+            <UInput v-model="apiKey" :type="showApiKey ? 'text' : 'password'"
               class="w-full p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md"
               placeholder="Enter your API key" />
             <UButton @click="showApiKey = !showApiKey" icon="i-heroicons-eye" color="gray" variant="ghost"
               class="absolute right-2 top-1/2 -translate-y-1/2">
-              <UIcon :name="showApiKey ? 'heroicons:eye-slash' : 'heroicons:eye'" />
+              <!-- <UIcon :name="showApiKey ? 'heroicons:eye-slash' : 'heroicons:eye'" /> -->
             </UButton>
           </div>
         </div>
@@ -45,13 +50,8 @@
           <label class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
             Model
           </label>
-          <select v-model="selectedModel"
-            class="w-full p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md"
-            :disabled="isProcessing">
-            <option v-for="[id, config] in Object.entries(MODEL_CONFIGS)" :key="id" :value="id">
-              {{ config.name }}
-            </option>
-          </select>
+          <USelect v-model="selectedModel" :options="modelOptions" option-attribute="name" value-attribute="id"
+            :disabled="isProcessing" color="white" variant="outline" size="md" class="w-full" />
 
           <!-- Model Info -->
           <div v-if="selectedModelInfo" class="mt-2 space-y-2">
@@ -69,6 +69,9 @@
             <p class="text-sm text-gray-500 dark:text-gray-400">
               {{ selectedModelInfo.description }}
             </p>
+          </div>
+          <div v-if="selectedModelInfo && documentText" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Estimated cost: ${{ estimatedCost }}
           </div>
         </div>
       </div>
@@ -94,14 +97,27 @@
 
       <!-- Issues Display -->
       <div v-if="store.itemList.value.length || loadingSkeletons.length" class="space-y-[6vh]">
-        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
-          <div>
-            <h2 class="text-xl font-semibold dark:text-white">Generated Issues</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400">Total: {{ store.itemList.value.length }}</p>
+        <!-- Search and header section -->
+        <div class="space-y-4">
+          <!-- Search input -->
+          <div v-if="store.itemList.value.length > 3">
+            <input v-model="searchQuery" type="text" placeholder="Search issues..."
+              class="w-full p-2 border rounded-md dark:bg-gray-800 dark:border-gray-700"
+              @keydown.esc="searchQuery = ''" />
           </div>
-          <UButton @click="clearAllIssues" color="gray" variant="ghost" size="sm">
-            Clear All
-          </UButton>
+
+          <!-- Issues header -->
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+            <div>
+              <h2 class="text-xl font-semibold dark:text-white">Generated Issues</h2>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                {{ store.itemList.value.length }} issues ({{ formatCompact(totalWordCount) }} words)
+              </p>
+            </div>
+            <UButton @click="clearAllIssues" color="gray" variant="ghost" size="sm">
+              Clear All
+            </UButton>
+          </div>
         </div>
 
         <!-- Issue Cards -->
@@ -127,7 +143,7 @@
             </div>
 
             <!-- Real issues -->
-            <template v-for="(issue, index) in displayedIssues" :key="issue.id || `real-${index}`">
+            <template v-for="(issue, index) in filteredIssues" :key="issue.id || `real-${index}`">
               <!-- Original issue card with splitting animation -->
               <div v-if="combiningIndices.includes(index)" class="space-y-4">
                 <!-- Keep original card but add splitting effect -->
@@ -164,7 +180,7 @@
                         <USkeleton class="h-4 w-5/6" />
                         <USkeleton class="h-4 w-4/6" />
                       </div>
-                      <div v-else class="prose prose-sm max-w-none text-gray-600 dark:text-gray-300 animate-flutter"
+                      <div v-else class="prose prose-sm max-w-none text-gray-600 dark:text-gray-200 animate-flutter"
                         v-html="renderedBody(splitIssues[0].body)" />
                     </div>
                   </div>
@@ -187,7 +203,7 @@
                         <USkeleton class="h-4 w-3/4" />
                         <USkeleton class="h-4 w-2/3" />
                       </div>
-                      <div v-else class="prose prose-sm max-w-none text-gray-600 dark:text-gray-300 animate-flutter"
+                      <div v-else class="prose prose-sm max-w-none text-gray-600 dark:text-gray-200 animate-flutter"
                         v-html="renderedBody(splitIssues[1].body)" />
                     </div>
                   </div>
@@ -196,7 +212,8 @@
 
               <!-- Normal issue card -->
               <Issue v-else :issue="issue" :index="index" :has-real-issues="hasRealIssues"
-                @remove="store.removeItem(issue)" @split="handleSplit(issue, index)" />
+                @remove="store.removeItem(issue)" @split="handleSplit(issue, index)"
+                @update="handleIssueUpdate(index, $event)" />
             </template>
           </TransitionGroup>
         </div>
@@ -204,7 +221,7 @@
         <!-- Generate More UButton -->
         <div v-if="!isProcessing" class="space-y-[6vh] mt-[12vh]">
           <!-- Custom Prompt Input -->
-          <div v-if="showCustomPrompt" class="p-4 border rounded-md bg-gray-50 max-w-2xl">
+          <div v-if="showCustomPrompt" id="custom-prompt-section" class="p-4 border rounded-md bg-gray-50 max-w-2xl">
             <div class="flex justify-between items-center mb-2">
               <label class="text-sm font-medium text-gray-700">Custom Generation Prompt</label>
               <UButton @click="showCustomPrompt = false" color="gray" variant="ghost" icon="i-heroicons-x-mark">
@@ -229,8 +246,17 @@
           </div>
         </div>
 
-        <!-- Add this after the Generate More section, but still inside the Issues Display div -->
-        <div v-if="store.itemList.value.length" class="mt-[12vh] border-t border-gray-200 dark:border-gray-700 pt-8">
+        <!-- Add this right before the GitHub button -->
+        <div v-if="store.itemList.value.length"
+          class="mt-[12vh] border-t border-gray-200 dark:border-gray-700 pt-8 space-y-4">
+          <!-- Export CSV Button -->
+          <UButton @click="exportToCSV" color="gray" variant="soft" block
+            class="flex items-center justify-center gap-3">
+            <Icon name="heroicons:document-arrow-down" class="w-6 h-6" />
+            <span class="text-lg font-medium">Export as CSV</span>
+          </UButton>
+
+          <!-- Existing GitHub button -->
           <UButton size="2xl" block :disabled="true" color="gray" class="relative overflow-hidden">
             <div class="flex items-center justify-center gap-3">
               <Icon name="simple-icons:github" class="w-8 h-8" />
@@ -284,6 +310,43 @@
       <span class="text-sm font-medium">Built by Room 302 Studio</span>
     </a>
   </div>
+
+  <!-- Add keyboard shortcuts help -->
+  <UButton v-if="!showKeyboardShortcuts && store.itemList.value.length > 0" @click="showKeyboardShortcuts = true"
+    color="gray" variant="ghost" size="xs" class="fixed bottom-4 right-4" icon="i-heroicons-keyboard">
+    Keyboard Shortcuts
+  </UButton>
+
+  <UModal v-model="showKeyboardShortcuts">
+    <div class="p-4">
+      <h3 class="text-lg font-medium mb-4">Keyboard Shortcuts</h3>
+      <div class="space-y-2">
+        <div class="flex justify-between">
+          <kbd class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700">⌘/Ctrl + Enter</kbd>
+          <span>Generate Issues</span>
+        </div>
+        <div class="flex justify-between">
+          <kbd class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700">Esc</kbd>
+          <span>Cancel Generation</span>
+        </div>
+        <div class="flex justify-between">
+          <kbd class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700">⌘/Ctrl + K</kbd>
+          <span>Focus Search</span>
+        </div>
+      </div>
+    </div>
+  </UModal>
+
+  <!-- Add search functionality to issues list -->
+  <div v-if="store.itemList.value.length > 3" class="mb-4">
+    <input v-model="searchQuery" type="text" placeholder="Search issues..."
+      class="w-full p-2 border rounded-md dark:bg-gray-800 dark:border-gray-700" @keydown.esc="searchQuery = ''" />
+  </div>
+
+  <!-- Add this near the top of the template -->
+  <CommandPalette ref="commandPalette" @generate="processDocument" @generate-more="generateMore"
+    @custom-prompt="showCustomPrompt = true" @clear="clearAllIssues" @toggle-theme="toggleTheme"
+    @clear-and-paste="clearAndPaste" />
 </template>
 
 <script setup lang="ts">
@@ -647,10 +710,6 @@ function formatPrice(price: string) {
   return num.toFixed(4)
 }
 
-// Helper function to format large numbers with commas
-function formatNumber(num: number) {
-  return new Intl.NumberFormat().format(num)
-}
 
 // Helper function to render markdown
 function renderedBody(text: string) {
@@ -678,6 +737,180 @@ function clearAllIssues() {
   // Reset any splitting state
   combiningIndices.value = []
   splitIssues.value = [{}, {}]
+}
+
+// Add these to the script section
+const showKeyboardShortcuts = ref(false)
+const searchQuery = ref('')
+
+// Add d3 import at the top of the script section
+import { format } from 'd3'
+
+// Create formatters
+const formatNumber = format(',')  // 1,234
+const formatCompact = format('.2~s')  // 1.2k, 34.1k, etc.
+
+// Update the character count computed property
+const characterCount = computed(() => {
+  const count = documentText.value.length
+  // Use compact format for numbers over 1000
+  return count >= 1000 ? formatCompact(count) : formatNumber(count)
+})
+
+// Estimated cost calculation
+const estimatedCost = computed(() => {
+  if (!selectedModelInfo.value?.pricing || !documentText.value) return '0.00'
+  const tokenEstimate = documentText.value.length / 4 // Rough estimate
+  const promptCost = (tokenEstimate / 1000) * parseFloat(selectedModelInfo.value.pricing.prompt)
+  const completionCost = (tokenEstimate / 1000) * parseFloat(selectedModelInfo.value.pricing.completion)
+  return (promptCost + completionCost).toFixed(3)
+})
+
+// Total word count for all issues
+const totalWordCount = computed(() => {
+  return store.itemList.value.reduce((total, issue) => {
+    return total + (issue.body.split(/\s+/).length + issue.title.split(/\s+/).length)
+  }, 0)
+})
+
+// Filtered issues based on search
+const filteredIssues = computed(() => {
+  const issues = store.itemList.value
+  if (!searchQuery.value) return issues
+
+  const query = searchQuery.value.toLowerCase()
+  return issues.filter(issue =>
+    issue.title.toLowerCase().includes(query) ||
+    issue.body.toLowerCase().includes(query)
+  )
+})
+
+// Command/Ctrl + K to focus search
+onMounted(() => {
+  window.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault()
+      commandPalette.value?.open()
+    }
+  })
+})
+
+function handleIssueUpdate(index: number, updatedIssue: Issue) {
+  store.itemList.value[index] = updatedIssue
+}
+
+// Add these to the script section
+const commandPalette = ref()
+const colorMode = useColorMode()
+
+function toggleTheme() {
+  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
+}
+
+// Update keyboard shortcuts
+onMounted(() => {
+  window.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault()
+      commandPalette.value?.open()
+    }
+  })
+})
+
+// Add to imports
+import { useClipboard } from '@vueuse/core'
+
+// Add clipboard functionality
+const { text: clipboardText, copy } = useClipboard()
+
+// Add clear and paste function
+async function clearAndPaste() {
+  try {
+    documentText.value = ''
+    await nextTick()
+    documentText.value = clipboardText.value
+    toast.add({
+      title: 'Clipboard Pasted',
+      description: `${formatNumber(clipboardText.value.length)} characters pasted`,
+      color: 'green'
+    })
+  } catch (error) {
+    toast.add({
+      title: 'Clipboard Error',
+      description: 'Failed to paste from clipboard',
+      color: 'red'
+    })
+  }
+}
+
+// Convert MODEL_CONFIGS to array format for USelect
+const modelOptions = computed(() =>
+  Object.entries(MODEL_CONFIGS).map(([id, config]) => ({
+    id,
+    name: config.name
+  }))
+)
+
+// Add to script section
+import { csvFormat } from 'd3'
+
+// Add export function
+function exportToCSV() {
+  try {
+    // Convert issues to CSV-friendly format
+    const data = store.itemList.value.map((issue, index) => ({
+      Number: index + 1,
+      Title: issue.title,
+      Description: issue.body,
+      'Word Count': issue.body.split(/\s+/).length,
+      'Created From': issue.history?.splitFrom ? 'Split' :
+        issue.history?.combinedFrom ? 'Combined' : 'Generated'
+    }))
+
+    // Generate CSV content
+    const csv = csvFormat(data)
+
+    // Format date manually instead of using d3.format
+    const now = new Date()
+    const dateStr = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+      String(now.getHours()).padStart(2, '0'),
+      String(now.getMinutes()).padStart(2, '0')
+    ].join('-')
+
+    // Create blob and download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+
+    link.setAttribute('href', url)
+    link.setAttribute('download', `issue-builder-export-${dateStr}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    toast.add({
+      title: 'Export Complete',
+      description: `${formatNumber(data.length)} issues exported to CSV`,
+      color: 'green'
+    })
+
+    // Track export
+    clickhouse.insertEvent('export-csv', data.length, {
+      issueCount: data.length,
+      totalWordCount: data.reduce((sum, issue) => sum + issue['Word Count'], 0)
+    })
+  } catch (error) {
+    console.error('Export error:', error)
+    toast.add({
+      title: 'Export Failed',
+      description: error instanceof Error ? error.message : 'Failed to export CSV',
+      color: 'red'
+    })
+  }
 }
 </script>
 
@@ -792,5 +1025,30 @@ function clearAllIssues() {
 .page-wrapper {
   flex: 1;
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Add these prose overrides */
+.prose {
+  @apply text-gray-600 dark:text-gray-200;
+}
+
+.prose ul {
+  @apply text-gray-600 dark:text-gray-200;
+}
+
+.prose ul li {
+  @apply text-gray-600 dark:text-gray-200;
+}
+
+.prose ul li::marker {
+  @apply text-gray-400 dark:text-gray-400;
+}
+
+.prose p {
+  @apply text-gray-600 dark:text-gray-200;
+}
+
+.prose code {
+  @apply bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200;
 }
 </style>
