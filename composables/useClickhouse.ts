@@ -1,7 +1,12 @@
 import { createClient } from '@clickhouse/client-web'
 import { useRuntimeConfig } from '#imports'
 
-export const useClickHouse = (servicePrefix: string = 'issuebuilder') => {
+// Add return type for better type safety
+interface ClickHouseUtils {
+  insertEvent: (action: string, metric?: number, additionalData?: Record<string, any>) => Promise<void>
+}
+
+export const useClickHouse = (servicePrefix: string = 'issuebuilder'): ClickHouseUtils => {
   const config = useRuntimeConfig()
 
   const clickhouseClient = createClient({
@@ -11,7 +16,11 @@ export const useClickHouse = (servicePrefix: string = 'issuebuilder') => {
     application: `${servicePrefix}-web`
   })
 
-  const insertEvent = async (action: string, metric: number = 1, additionalData: Record<string, any> = {}) => {
+  const insertEvent = async (
+    action: string, 
+    metric: number = 1, 
+    additionalData: Record<string, any> = {}
+  ): Promise<void> => {
     try {
       const prefixedAction = `${servicePrefix}-${action}`
       

@@ -2,4 +2,8 @@
   <div>
     <slot />
   </div>
-</template> 
+</template>
+
+<script setup lang="ts">
+// No setup needed
+</script>

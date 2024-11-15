@@ -35,15 +35,29 @@ export default defineNuxtConfig({
         },
       },
     ],
+    ['@unlok-co/nuxt-stripe', {
+      server: {
+        key: process.env.STRIPE_SECRET_KEY,
+        options: {}
+      },
+      client: {
+        key: process.env.STRIPE_PUBLISHABLE_KEY,
+        options: {
+          locale: 'en'
+        }
+      }
+    }],
   ],
   runtimeConfig: {
     WEATHER_KEY: process.env.WEATHER_KEY,
+    stripeSecret: process.env.STRIPE_SECRET_KEY,
     public: {
       SITE_URL: process.env.SITE_URL,
       CLICKHOUSE_HOST: process.env.CLICKHOUSE_HOST,
       CLICKHOUSE_USER: process.env.CLICKHOUSE_USER,
       CLICKHOUSE_PASSWORD: process.env.CLICKHOUSE_PASSWORD,
-    },
+      stripeKey: process.env.STRIPE_PUBLISHABLE_KEY,
+    }
   },
   supabase: {
     redirectOptions: {
