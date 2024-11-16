@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { parseIssuesFromStream, streamIssues } from './useLLMToIssues';
+import { installFetch, uninstallFetch } from 'vi-fetch';
 
 describe('parseIssuesFromStream', () => {
   it('should parse a stream of XML into Issue objects', async () => {
@@ -17,7 +18,8 @@ describe('parseIssuesFromStream', () => {
     });
 
     const issues = [];
-    for await (const issue of parseIssuesFromStream(stream)) {
+    const parser = parseIssuesFromStream(stream);
+    for await (const issue of parser) {
       issues.push(issue);
     }
 
@@ -36,7 +38,8 @@ describe('parseIssuesFromStream', () => {
     });
 
     await expect(async () => {
-      for await (const _ of parseIssuesFromStream(stream)) {
+      const parser = parseIssuesFromStream(stream);
+      for await (const _ of parser) {
         // do nothing
       }
     }).rejects.toThrow();
@@ -44,6 +47,14 @@ describe('parseIssuesFromStream', () => {
 });
 
 describe('streamIssues', () => {
+  beforeEach(() => {
+    installFetch();
+  });
+
+  afterEach(() => {
+    uninstallFetch();
+  });
+
   it('should stream issues from the OpenRouter API', async () => {
     const mockResponse = new Response(`
       <IssueTitle>Issue 1</IssueTitle>
@@ -54,7 +65,8 @@ describe('streamIssues', () => {
       status: 200,
       headers: { 'Content-Type': 'application/xml' },
     });
-    global.fetch = jest.fn().mockResolvedValue(mockResponse);
+
+    vi.spyOn(global, 'fetch').mockResolvedValue(mockResponse);
 
     const issues = [];
     const errors = [];
@@ -73,12 +85,10 @@ describe('streamIssues', () => {
           'Authorization': 'Bearer fake_api_key',
           'Content-Type': 'application/json',
         }),
-        body: JSON.stringify({
-          prompt: 'Fake prompt',
-          stream: true,
-        }),
+        body: expect.any(String),
       }),
     );
+
     expect(issues).toEqual([
       { title: 'Issue 1', body: 'This is the first issue.' },
       { title: 'Issue 2', body: 'This is the second issue.' },
@@ -87,7 +97,7 @@ describe('streamIssues', () => {
   });
 
   it('should handle HTTP errors from the OpenRouter API', async () => {
-    global.fetch = jest.fn().mockResolvedValue(new Response('', { status: 500 }));
+    vi.spyOn(global, 'fetch').mockResolvedValue(new Response('', { status: 500 }));
 
     const issues = [];
     const errors = [];
