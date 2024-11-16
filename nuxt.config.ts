@@ -12,38 +12,42 @@ export default defineNuxtConfig({
       ],
     }
   },
-  nitro: {
-    preset: 'netlify',
-    prerender: {
-      crawlLinks: true,
-      routes: ['/']
-    }
-  },
+
+  // Netlify deployment settings
   ssr: true,
+  compatibilityDate: '2024-10-15',
+
+  // Development
   devtools: { enabled: true },
+
+  // Core modules
   modules: [
-    '@nuxtjs/supabase',
-    '@vueuse/nuxt',
     '@nuxt/ui',
-    '@nuxtjs/google-fonts',
+    '@vueuse/nuxt',
+    '@nuxtjs/supabase',
     '@unlok-co/nuxt-stripe',
-  ],
-  googleFonts: {
-    families: {
-      Figtree: [400, 500, 700, 800],
-    },
-    display: 'swap'
-  },
-  vite: {
-    build: {
-      rollupOptions: {
-        external: ['anime.esm.min.js'],
+    '@vueuse/motion/nuxt',
+    [
+      '@nuxtjs/google-fonts',
+      {
+        families: {
+          Figtree: [400, 700]
+        }
       }
-    },
-    optimizeDeps: {
-      exclude: ['anime.esm.min.js']
+    ]
+  ],
+
+  // Runtime config
+  runtimeConfig: {
+    stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    public: {
+      SITE_URL: process.env.SITE_URL || 'http://localhost:3000',
+      stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY
     }
   },
+
+  // Stripe configuration
   stripe: {
     server: {
       key: process.env.STRIPE_SECRET_KEY,
@@ -54,14 +58,8 @@ export default defineNuxtConfig({
       options: { locale: 'en' }
     }
   },
-  runtimeConfig: {
-    stripeSecretKey: process.env.STRIPE_SECRET_KEY,
-    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
-    public: {
-      SITE_URL: process.env.SITE_URL || 'http://localhost:3000',
-      stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY
-    }
-  },
+
+  // Supabase auth configuration
   supabase: {
     redirectOptions: {
       login: '/auth/login',
@@ -72,10 +70,9 @@ export default defineNuxtConfig({
       secure: process.env.NODE_ENV === 'production'
     }
   },
-  build: {
-    transpile: ['marked']
-  },
-  experimental: {
-    payloadExtraction: false
+
+  // Nitro configuration
+  nitro: {
+    preset: 'netlify'
   }
-});
+})
