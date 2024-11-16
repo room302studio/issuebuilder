@@ -34,6 +34,16 @@ export default defineNuxtConfig({
     },
     display: 'swap'
   },
+  vite: {
+    build: {
+      rollupOptions: {
+        external: ['anime.esm.min.js'],
+      }
+    },
+    optimizeDeps: {
+      exclude: ['anime.esm.min.js']
+    }
+  },
   stripe: {
     server: {
       key: process.env.STRIPE_SECRET_KEY,
@@ -66,7 +76,6 @@ export default defineNuxtConfig({
     transpile: ['marked']
   },
   experimental: {
-    payloadExtraction: false,
-    inlineSSRStyles: false
+    payloadExtraction: false
   }
 });
