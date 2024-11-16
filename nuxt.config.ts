@@ -4,52 +4,47 @@ import pkg from './package.json';
 export default defineNuxtConfig({
   app: {
     head: {
-      title: pkg.name,
+      title: 'IssueBuilder',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: pkg.version },
+        { name: 'description', content: 'AI-Powered GitHub Issue Generator' },
       ],
     }
   },
   nitro: {
-    future: {
-      nativeSWR: true
-    },
-    preset: 'netlify'
+    preset: 'netlify',
+    prerender: {
+      crawlLinks: true,
+      routes: ['/']
+    }
   },
-  // routeRules: {
-  //   '/**': { cache: { swr: true } }
-  // },
   ssr: true,
   devtools: { enabled: true },
   modules: [
     '@nuxtjs/supabase',
     '@vueuse/nuxt',
     '@nuxt/ui',
-    [
-      '@nuxtjs/google-fonts',
-      {
-        families: {
-          Figtree: [400, 500, 700, 800],
-        },
-      },
-    ],
-    ['@unlok-co/nuxt-stripe', {
-      server: {
-        key: process.env.STRIPE_SECRET_KEY,
-        options: {}
-      },
-      client: {
-        key: process.env.STRIPE_PUBLISHABLE_KEY,
-        options: {
-          locale: 'en'
-        }
-      }
-    }],
+    '@nuxtjs/google-fonts',
+    '@unlok-co/nuxt-stripe',
   ],
+  googleFonts: {
+    families: {
+      Figtree: [400, 500, 700, 800],
+    },
+    display: 'swap'
+  },
+  stripe: {
+    server: {
+      key: process.env.STRIPE_SECRET_KEY,
+      options: {}
+    },
+    client: {
+      key: process.env.STRIPE_PUBLISHABLE_KEY,
+      options: { locale: 'en' }
+    }
+  },
   runtimeConfig: {
-    WEATHER_KEY: process.env.WEATHER_KEY,
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
     public: {
@@ -67,17 +62,11 @@ export default defineNuxtConfig({
       secure: process.env.NODE_ENV === 'production'
     }
   },
-  vite: {
-    optimizeDeps: {
-      include: ['marked']
-    },
-    build: {
-      rollupOptions: {
-        external: process.env.NODE_ENV === 'development' ? [] : ['marked']
-      }
-    }
+  build: {
+    transpile: ['marked']
   },
   experimental: {
-    payloadExtraction: false
+    payloadExtraction: false,
+    inlineSSRStyles: false
   }
 });
