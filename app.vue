@@ -7,11 +7,6 @@
 </template>
 
 <script setup>
-// Force default layout
-definePageMeta({
-  layout: 'default'
-})
-
 useHead({
   title: 'IssueBuilder - AI-Powered GitHub Issue Generator',
   titleTemplate: '%s | IssueBuilder',

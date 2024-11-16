@@ -9,9 +9,6 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'AI-Powered GitHub Issue Generator' },
-      ],
-      script: [
-        { src: '/anime.esm.min.js', type: 'module' }
       ]
     }
   },
@@ -76,10 +73,23 @@ export default defineNuxtConfig({
 
   // Nitro configuration
   nitro: {
-    preset: 'netlify'
+    preset: 'netlify',
+    prerender: {
+      crawlLinks: true,
+      routes: ['/']
+    }
   },
 
   vite: {
-    // Only keep general Vite config if needed
+    build: {
+      rollupOptions: {
+        output: {
+          inlineDynamicImports: true
+        }
+      }
+    },
+    ssr: {
+      noExternal: ['anime.esm.js', '@nuxt/ui', '@nuxt/ui-templates']
+    }
   }
 })

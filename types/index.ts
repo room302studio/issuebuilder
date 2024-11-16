@@ -1,10 +1,9 @@
 export interface Issue {
+  id: string;
   title: string;
   body: string;
   history?: {
-    combinedFrom?: Issue[];
-    combinedAt?: string;
-    splitFrom?: Issue;
-    splitAt?: string;
+    splitFrom?: string;
+    combinedFrom?: string[];
   }
 } 
