@@ -156,7 +156,7 @@ const splitIssues = ref<Partial<Issue>[]>([{}, {}])
 
 // Computed
 const displayedIssues = computed(() => {
-  return store.itemList.value.filter(issue => !issue.skeleton)
+  return store.itemList.value.filter((issue: Issue) => !issue.skeleton)
 })
 
 const hasRealIssues = computed(() => {
@@ -176,7 +176,7 @@ async function handleSplit(issue: Issue, index: number) {
 }
 
 function renderedBody(text: string) {
-  return DOMPurify.sanitize(marked.parse(text))
+  return DOMPurify.sanitize(marked.parse(text, { async: false }))
 }
 
 async function generateMoreWithPrompt() {
