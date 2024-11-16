@@ -58,11 +58,6 @@ const userMenuItems = computed(() => [
       label: 'Account Settings',
       icon: 'i-heroicons-cog-6-tooth',
       to: '/settings'
-    },
-    {
-      label: 'My Issues',
-      icon: 'i-heroicons-clipboard-document-list',
-      to: '/issues'
     }
   ],
   [
