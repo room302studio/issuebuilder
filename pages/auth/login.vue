@@ -38,7 +38,7 @@ async function handleGitHubLogin() {
       provider: 'github',
       options: {
         redirectTo: `${config.public.SITE_URL}/auth/confirm`,
-        scopes: 'read:user'
+        scopes: 'repo'
       }
     })
     if (error) throw error

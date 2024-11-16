@@ -29,6 +29,9 @@
                 </div>
               </UButton>
             </UDropdown>
+            <UButton color="gray" variant="ghost" @click="linkWithGitHub">
+              Link with GitHub
+            </UButton>
           </template>
 
           <!-- Show login button when logged out -->
@@ -77,5 +80,20 @@ const userMenuItems = computed(() => [
 // Fix the toggleDark function
 function toggleDark() {
   colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
+}
+
+async function linkWithGitHub() {
+  try {
+    const { data, error } = await client.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        scopes: 'repo'
+      }
+    })
+    if (error) throw error
+  } catch (error) {
+    console.error('Error linking with GitHub:', error)
+  }
 }
 </script>

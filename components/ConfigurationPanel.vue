@@ -54,6 +54,9 @@
         </p>
       </div>
     </div>
+
+    <!-- Repositories List -->
+    <RepositoriesList />
   </div>
 </template>
 
