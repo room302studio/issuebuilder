@@ -74,5 +74,21 @@ export default defineNuxtConfig({
   // Nitro configuration
   nitro: {
     preset: 'netlify'
+  },
+
+  vite: {
+    optimizeDeps: {
+      exclude: ['@/anime.esm.min.js']
+    },
+    build: {
+      rollupOptions: {
+        external: []
+      }
+    }
+  },
+
+  // Add alias for cleaner imports
+  alias: {
+    '@anime': './anime.esm.min.js'
   }
 })
