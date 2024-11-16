@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { parseIssuesFromStream, streamIssues } from './useLLMToIssues';
-import { installFetch, uninstallFetch } from 'vi-fetch';
+import { setupFetchMock } from '@vitest/fetch';
+
+const fetchMock = setupFetchMock();
 
 describe('parseIssuesFromStream', () => {
   it('should parse a stream of XML into Issue objects', async () => {
@@ -48,11 +50,7 @@ describe('parseIssuesFromStream', () => {
 
 describe('streamIssues', () => {
   beforeEach(() => {
-    installFetch();
-  });
-
-  afterEach(() => {
-    uninstallFetch();
+    fetchMock.reset();
   });
 
   it('should stream issues from the OpenRouter API', async () => {
@@ -66,7 +64,7 @@ describe('streamIssues', () => {
       headers: { 'Content-Type': 'application/xml' },
     });
 
-    vi.spyOn(global, 'fetch').mockResolvedValue(mockResponse);
+    fetchMock.mockResponse(mockResponse);
 
     const issues = [];
     const errors = [];
@@ -77,7 +75,7 @@ describe('streamIssues', () => {
       (err) => errors.push(err),
     );
 
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       'https://openrouter.ai/api/v1/chat/completions',
       expect.objectContaining({
         method: 'POST',
@@ -97,7 +95,7 @@ describe('streamIssues', () => {
   });
 
   it('should handle HTTP errors from the OpenRouter API', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue(new Response('', { status: 500 }));
+    fetchMock.mockResponse('', { status: 500 });
 
     const issues = [];
     const errors = [];

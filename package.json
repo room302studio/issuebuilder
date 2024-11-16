@@ -20,8 +20,8 @@
     "@types/node": "^18.17.1",
     "@types/stripe": "^8.0.417",
     "@vitest/coverage-v8": "^1.4.0",
+    "@vitest/fetch": "^1.4.0",
     "nuxt": "^3.6.5",
-    "vi-fetch": "^1.0.0",
     "vitest": "^1.4.0"
   },
   "dependencies": {
