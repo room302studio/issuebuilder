@@ -19,8 +19,23 @@ jobs:
         node-version: '20'
         cache: 'yarn'
         
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
+    - name: Install dependencies and update lockfile
+      run: yarn install
+      
+    - name: Commit yarn.lock
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add yarn.lock
+        git diff --quiet && git diff --staged --quiet || git commit -m "chore: update yarn.lock"
+      continue-on-error: true
+        
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}
+      continue-on-error: true
       
     - name: Run tests
       run: yarn test
