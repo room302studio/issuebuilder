@@ -54,9 +54,6 @@
         </p>
       </div>
     </div>
-
-    <!-- Repositories List -->
-    <RepositoriesList />
   </div>
 </template>
 
@@ -80,11 +77,6 @@ const selectedModel = useLocalStorage('selected-model', 'anthropic/claude-3.5-so
 // Model details handling
 const modelDetails = ref<Record<string, any>>({})
 const selectedModelInfo = computed(() => modelDetails.value[selectedModel.value])
-
-// Watch and sync with store
-watch(selectedModel, (newModel) => {
-  // No need to sync with store anymore
-})
 
 async function fetchModelDetails() {
   try {
