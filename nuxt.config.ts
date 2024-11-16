@@ -10,6 +10,9 @@ export default defineNuxtConfig({
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'AI-Powered GitHub Issue Generator' },
       ],
+      script: [
+        { src: '/anime.esm.min.js', type: 'module' }
+      ]
     }
   },
 
@@ -77,18 +80,6 @@ export default defineNuxtConfig({
   },
 
   vite: {
-    optimizeDeps: {
-      exclude: ['@/anime.esm.min.js']
-    },
-    build: {
-      rollupOptions: {
-        external: []
-      }
-    }
-  },
-
-  // Add alias for cleaner imports
-  alias: {
-    '@anime': './anime.esm.min.js'
+    // Only keep general Vite config if needed
   }
 })
