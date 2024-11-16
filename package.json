@@ -8,14 +8,20 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "prettier": "prettier {*.*,**/*.*} --single-quote --write",
-    "lint": "eslint --ext .js,.vue --ignore-path .gitignore --fix src"
+    "typecheck": "nuxt typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@nuxt/devtools": "^1.0.0",
     "@types/node": "^18.17.1",
     "@types/stripe": "^8.0.417",
-    "nuxt": "^3.6.5"
+    "@vitest/coverage-v8": "^1.4.0",
+    "nuxt": "^3.6.5",
+    "vitest": "^1.4.0"
   },
   "dependencies": {
     "@clickhouse/client-web": "^1.8.1",

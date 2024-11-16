@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,6 +24,9 @@ jobs:
       
     - name: Run tests
       run: yarn test
-
-    - name: Run type check
-      run: yarn typecheck 
+      
+    - name: Type check
+      run: yarn typecheck
+      
+    - name: Build
+      run: yarn build
