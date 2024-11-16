@@ -41,11 +41,10 @@ export default defineNuxtConfig({
   runtimeConfig: {
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
     public: {
-      SITE_URL: process.env.SITE_URL || 'http://localhost:3000',
-      stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
-      githubClientId: process.env.GITHUB_CLIENT_ID,
-      githubClientSecret: process.env.GITHUB_CLIENT_SECRET
+      siteUrl: process.env.SITE_URL || 'http://localhost:3000',
+      githubClientId: process.env.GITHUB_CLIENT_ID
     }
   },
 

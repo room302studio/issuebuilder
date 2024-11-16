@@ -128,6 +128,10 @@
         </div>
       </UButton>
     </div>
+
+    <div v-if="store.githubToken" class="mt-8">
+      <RepositorySelector />
+    </div>
   </div>
 </template>
 
