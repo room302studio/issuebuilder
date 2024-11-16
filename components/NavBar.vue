@@ -1,53 +1,42 @@
 <template>
-  <nav class="border-b border-gray-200 dark:border-gray-800">
+  <nav class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between h-16 items-center">
-        <!-- Logo -->
-        <NuxtLink to="/" class="font-semibold flex items-center gap-2 group">
-          <UIcon name="i-heroicons-code-bracket-square-20-solid"
-            class="w-6 h-6 text-purple-500 group-hover:text-purple-600 transition-colors" />
-          Issue Builder
-        </NuxtLink>
+      <div class="flex justify-between h-16">
+        <div class="flex">
+          <!-- Logo -->
+          <div class="flex-shrink-0 flex items-center">
+            <NuxtLink to="/" class="text-gray-900 dark:text-white font-semibold">
+              Issue Parser
+            </NuxtLink>
+          </div>
+        </div>
 
         <!-- Right side -->
-        <div class="flex items-center gap-4">
-          <!-- Subscription Status -->
-          <USkeleton v-if="loading" class="h-6 w-24" />
+        <div class="flex items-center gap-3">
+          <!-- Theme Toggle -->
+          <UButton color="gray" variant="ghost"
+            :icon="colorMode.value === 'dark' ? 'i-heroicons-sun' : 'i-heroicons-moon'" @click="toggleDark()" />
 
-          <template v-else>
-            <div v-if="hasActiveSubscription" class="text-sm text-green-500 flex items-center gap-2">
-              <UIcon name="i-heroicons-star-20-solid" class="w-5 h-5" />
-              <span>Lifetime Access</span>
-            </div>
-            <UButton v-else to="/checkout" color="primary" variant="soft" size="sm">
-              <template #leading>
-                <UIcon name="i-heroicons-sparkles-20-solid" />
-              </template>
-              Upgrade
-            </UButton>
+          <!-- Show these options when logged in -->
+          <template v-if="user">
+            <UDropdown :items="userMenuItems">
+              <UButton color="gray" variant="ghost">
+                <div class="flex items-center gap-2">
+                  <UAvatar :src="user?.user_metadata?.avatar_url" :alt="user?.user_metadata?.name || user?.email"
+                    size="sm" />
+                  <span class="text-sm">{{ user?.user_metadata?.name || user?.email }}</span>
+                  <Icon name="heroicons:chevron-down" class="w-4 h-4" />
+                </div>
+              </UButton>
+            </UDropdown>
           </template>
 
-          <!-- User Menu -->
-          <UDropdown v-if="user" :items="menuItems" :popper="{ placement: 'bottom-end' }">
-            <UButton color="white" class="flex items-center gap-2">
-              <template #leading>
-                <UAvatar v-if="user.user_metadata?.avatar_url" :src="user.user_metadata.avatar_url" :alt="user.email"
-                  size="sm" />
-                <UIcon v-else name="i-heroicons-user-circle-20-solid" class="w-5 h-5" />
-              </template>
-              {{ user.email }}
-              <template #trailing>
-                <UIcon name="i-heroicons-chevron-down-20-solid" class="w-4 h-4" />
-              </template>
+          <!-- Show login button when logged out -->
+          <template v-else>
+            <UButton color="gray" variant="ghost" to="/auth/login">
+              Sign In
             </UButton>
-          </UDropdown>
-
-          <UButton v-else to="/auth/login" color="gray" variant="ghost">
-            <template #leading>
-              <UIcon name="i-heroicons-arrow-right-on-rectangle-20-solid" />
-            </template>
-            Sign In
-          </UButton>
+          </template>
         </div>
       </div>
     </div>
@@ -56,71 +45,37 @@
 
 <script setup lang="ts">
 const user = useSupabaseUser()
-const supabase = useSupabaseClient()
+const colorMode = useColorMode()
+const client = useSupabaseClient()
 
-const loading = ref(true)
-const hasActiveSubscription = ref(false)
-
-// Menu items grouped as per Nuxt UI docs
-const menuItems = computed(() => [
-  [{
-    label: user.value?.email,
-    icon: 'i-heroicons-user-20-solid',
-    avatar: user.value?.user_metadata?.avatar_url ? {
-      src: user.value.user_metadata.avatar_url
-    } : undefined
-  }],
-  [{
-    label: 'Account Settings',
-    icon: 'i-heroicons-cog-6-tooth-20-solid',
-    disabled: true
-  }],
-  [{
-    label: 'Documentation',
-    icon: 'i-heroicons-book-open-20-solid',
-    disabled: true
-  }],
-  [{
-    label: 'Sign Out',
-    icon: 'i-heroicons-arrow-left-on-rectangle-20-solid',
-    class: 'text-red-500 dark:text-red-400',
-    click: async () => {
-      await supabase.auth.signOut()
-      navigateTo('/auth/login')
+// User menu items
+const userMenuItems = computed(() => [
+  [
+    {
+      label: 'Account Settings',
+      icon: 'i-heroicons-cog-6-tooth',
+      to: '/settings'
+    },
+    {
+      label: 'My Issues',
+      icon: 'i-heroicons-clipboard-document-list',
+      to: '/issues'
     }
-  }]
+  ],
+  [
+    {
+      label: 'Sign Out',
+      icon: 'i-heroicons-arrow-right-on-rectangle',
+      click: async () => {
+        await client.auth.signOut()
+        navigateTo('/auth/login')
+      }
+    }
+  ]
 ])
 
-// Check subscription status
-const checkSubscription = async () => {
-  if (!user.value) {
-    loading.value = false
-    return
-  }
-
-  try {
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('auth_user_id', user.value.id)
-      .single()
-
-    if (userData) {
-      const { data: subscription } = await supabase
-        .from('subscriptions')
-        .select('status')
-        .eq('user_id', userData.id)
-        .eq('product_id', '1e3099b8-c3f2-47aa-818c-0cef8767b25f')
-        .single()
-
-      hasActiveSubscription.value = subscription?.status === 'active'
-    }
-  } catch (error) {
-    console.error('Error checking subscription:', error)
-  } finally {
-    loading.value = false
-  }
+// Fix the toggleDark function
+function toggleDark() {
+  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
 }
-
-watch(user, checkSubscription, { immediate: true })
 </script>
