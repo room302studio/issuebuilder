@@ -1,5 +1,3 @@
-import { useAppStore } from '~/stores/app'
-import { createParser, type Parser, type ParserEvent } from 'eventsource-parser'
 import type { Issue } from '~/types'
 
 /**
