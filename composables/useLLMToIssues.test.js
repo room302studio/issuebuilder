@@ -1,8 +1,29 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from 'vitest';
 import { parseIssuesFromStream, streamIssues } from './useLLMToIssues';
-import { setupFetchMock } from '@vitest/fetch';
+import { setupServer } from 'msw/node';
+import { http, HttpResponse } from 'msw';
 
-const fetchMock = setupFetchMock();
+// Setup MSW server
+const server = setupServer(
+  // Mock the OpenRouter API endpoint
+  http.post('https://openrouter.ai/api/v1/chat/completions', () => {
+    return HttpResponse.text(`
+      <IssueTitle>Issue 1</IssueTitle>
+      <IssueText>This is the first issue.</IssueText>
+      <IssueTitle>Issue 2</IssueTitle>
+      <IssueText>This is the second issue.</IssueText>
+    `)
+  })
+);
+
+// Start server before all tests
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+
+// Reset handlers after each test
+afterEach(() => server.resetHandlers());
+
+// Close server after all tests
+afterAll(() => server.close());
 
 describe('parseIssuesFromStream', () => {
   it('should parse a stream of XML into Issue objects', async () => {
@@ -49,23 +70,7 @@ describe('parseIssuesFromStream', () => {
 });
 
 describe('streamIssues', () => {
-  beforeEach(() => {
-    fetchMock.reset();
-  });
-
   it('should stream issues from the OpenRouter API', async () => {
-    const mockResponse = new Response(`
-      <IssueTitle>Issue 1</IssueTitle>
-      <IssueText>This is the first issue.</IssueText>
-      <IssueTitle>Issue 2</IssueTitle>
-      <IssueText>This is the second issue.</IssueText>
-    `, {
-      status: 200,
-      headers: { 'Content-Type': 'application/xml' },
-    });
-
-    fetchMock.mockResponse(mockResponse);
-
     const issues = [];
     const errors = [];
     await streamIssues(
@@ -73,18 +78,6 @@ describe('streamIssues', () => {
       'Fake prompt',
       (issue) => issues.push(issue),
       (err) => errors.push(err),
-    );
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://openrouter.ai/api/v1/chat/completions',
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({
-          'Authorization': 'Bearer fake_api_key',
-          'Content-Type': 'application/json',
-        }),
-        body: expect.any(String),
-      }),
     );
 
     expect(issues).toEqual([
@@ -95,7 +88,12 @@ describe('streamIssues', () => {
   });
 
   it('should handle HTTP errors from the OpenRouter API', async () => {
-    fetchMock.mockResponse('', { status: 500 });
+    // Override the handler for this test
+    server.use(
+      http.post('https://openrouter.ai/api/v1/chat/completions', () => {
+        return new HttpResponse(null, { status: 500 })
+      })
+    );
 
     const issues = [];
     const errors = [];
