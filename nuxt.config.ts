@@ -1,4 +1,4 @@
-import pkg from './package.json';
+import pkg from './package.json'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -8,7 +8,7 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'AI-Powered GitHub Issue Generator' },
+        { name: 'description', content: 'AI-Powered GitHub Issue Generator' }
       ]
     }
   },
@@ -86,7 +86,8 @@ export default defineNuxtConfig({
       rollupOptions: {
         output: {
           inlineDynamicImports: true
-        }
+        },
+        external: ['isomorphic-dompurify']
       }
     },
     ssr: {
