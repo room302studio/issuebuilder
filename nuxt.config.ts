@@ -83,15 +83,20 @@ export default defineNuxtConfig({
 
   vite: {
     build: {
+      transpile: ['isomorphic-dompurify'],
       rollupOptions: {
         output: {
           inlineDynamicImports: true
-        },
-        external: ['isomorphic-dompurify']
+        }
       }
     },
     ssr: {
-      noExternal: ['anime.esm.js', '@nuxt/ui', '@nuxt/ui-templates']
+      noExternal: [
+        'anime.esm.js',
+        '@nuxt/ui',
+        '@nuxt/ui-templates',
+        'isomorphic-dompurify'
+      ]
     }
   }
 })
