@@ -6,15 +6,39 @@
     <div class="space-y-6 mb-12">
       <h2 class="text-lg font-medium">GitHub Connection</h2>
       <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-4">
-        <div v-if="store.githubUser" class="flex items-center gap-4">
-          <img :src="store.githubUser.avatar_url" :alt="store.githubUser.login" class="w-12 h-12 rounded-full">
-          <div>
-            <div class="font-medium">{{ store.githubUser.name || store.githubUser.login }}</div>
-            <div class="text-sm text-gray-500">@{{ store.githubUser.login }}</div>
+        <div v-if="store.githubUser" class="space-y-4">
+          <div class="flex items-center gap-4">
+            <img :src="store.githubUser.avatar_url" :alt="store.githubUser.login" class="w-12 h-12 rounded-full">
+            <div>
+              <div class="font-medium">{{ store.githubUser.name || store.githubUser.login }}</div>
+              <div class="text-sm text-gray-500">@{{ store.githubUser.login }}</div>
+            </div>
+            <UButton color="red" variant="soft" size="sm" class="ml-auto" @click="disconnectGithub">
+              Disconnect
+            </UButton>
           </div>
-          <UButton color="red" variant="soft" size="sm" class="ml-auto" @click="disconnectGithub">
-            Disconnect
-          </UButton>
+
+          <!-- Add repositories list -->
+          <div class="space-y-2">
+            <div class="text-sm font-medium text-gray-600 dark:text-gray-300">
+              Accessible Repositories ({{ userRepos.length }})
+            </div>
+            <div class="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md">
+              <div v-if="loadingRepos" class="p-3 text-sm text-gray-500">
+                Loading repositories...
+              </div>
+              <div v-else-if="userRepos.length === 0" class="p-3 text-sm text-gray-500">
+                No repositories found
+              </div>
+              <div v-else class="divide-y divide-gray-200 dark:divide-gray-700">
+                <div v-for="repo in userRepos" :key="repo.id"
+                  class="p-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <div class="font-medium">{{ repo.name }}</div>
+                  <div class="text-xs text-gray-500">{{ repo.full_name }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <GitHubLoginButton v-else />
         <p class="text-sm text-gray-600 dark:text-gray-400">
@@ -87,6 +111,41 @@ const apiKey = useLocalStorage('openrouter-api-key', '')
 const selectedModel = useLocalStorage('selected-model', 'anthropic/claude-3.5-sonnet:beta')
 
 import { MODEL_CONFIGS } from '~/composables/useOpenRouter'
+
+// Add this type near the top of the script section
+interface GitHubRepo {
+  id: number
+  name: string
+  full_name: string
+}
+
+// Update the ref to use the type
+const userRepos = ref<GitHubRepo[]>([])
+const loadingRepos = ref(false)
+
+async function fetchUserRepos() {
+  if (!store.githubUser) return
+
+  loadingRepos.value = true
+  try {
+    const response = await fetch('https://api.github.com/user/repos', {
+      headers: {
+        Authorization: `Bearer ${store.githubToken}`
+      }
+    })
+    userRepos.value = await response.json()
+  } catch (error) {
+    console.error('Error fetching repos:', error)
+  } finally {
+    loadingRepos.value = false
+  }
+}
+
+onMounted(() => {
+  if (store.githubUser) {
+    fetchUserRepos()
+  }
+})
 
 async function disconnectGithub() {
   try {
