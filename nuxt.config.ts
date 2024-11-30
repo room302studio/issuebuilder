@@ -1,4 +1,4 @@
-import pkg from './package.json';
+import pkg from './package.json'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -8,7 +8,7 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'AI-Powered GitHub Issue Generator' },
+        { name: 'description', content: 'AI-Powered GitHub Issue Generator' }
       ]
     }
   },
@@ -41,9 +41,10 @@ export default defineNuxtConfig({
   runtimeConfig: {
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
     public: {
-      SITE_URL: process.env.SITE_URL || 'http://localhost:3000',
-      stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+      siteUrl: process.env.SITE_URL || 'http://localhost:3000',
+      githubClientId: process.env.GITHUB_CLIENT_ID
     }
   },
 
@@ -85,7 +86,8 @@ export default defineNuxtConfig({
       rollupOptions: {
         output: {
           inlineDynamicImports: true
-        }
+        },
+        external: ['isomorphic-dompurify']
       }
     },
     ssr: {

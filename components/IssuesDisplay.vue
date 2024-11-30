@@ -116,17 +116,16 @@
 
     <!-- GitHub Export Button -->
     <div v-if="store.itemList.value.length" class="mt-[12vh] border-t border-gray-200 dark:border-gray-700 pt-8">
-      <UButton size="lg" block :disabled="true" color="gray" class="relative overflow-hidden">
-        <div class="flex items-center justify-center gap-3">
-          <Icon name="simple-icons:github" class="w-8 h-8" />
-          <span class="text-lg font-medium">Send to GitHub Repository</span>
-        </div>
-        <div class="absolute inset-0 bg-gray-900/10 dark:bg-gray-100/10 flex items-center justify-center">
-          <div class="px-3 py-1 bg-gray-900/90 dark:bg-gray-100/90 rounded-full">
-            <span class="text-xs font-medium text-white dark:text-gray-900">Coming Soon</span>
-          </div>
-        </div>
-      </UButton>
+      <!-- Show login button if not authenticated -->
+      <div v-if="!store.githubToken" class="space-y-4">
+        <p class="text-sm text-gray-600 dark:text-gray-400">Connect your GitHub account to export issues</p>
+        <GitHubLoginButton />
+      </div>
+
+      <!-- Show repository selector when authenticated -->
+      <div v-else>
+        <RepositorySelector />
+      </div>
     </div>
   </div>
 </template>
@@ -156,7 +155,7 @@ const splitIssues = ref<Partial<Issue>[]>([{}, {}])
 
 // Computed
 const displayedIssues = computed(() => {
-  return store.itemList.value.filter(issue => !issue.skeleton)
+  return store.itemList.value.filter((issue: Issue) => !issue.skeleton)
 })
 
 const hasRealIssues = computed(() => {
@@ -176,7 +175,7 @@ async function handleSplit(issue: Issue, index: number) {
 }
 
 function renderedBody(text: string) {
-  return DOMPurify.sanitize(marked.parse(text))
+  return DOMPurify.sanitize(marked.parse(text, { async: false }))
 }
 
 async function generateMoreWithPrompt() {

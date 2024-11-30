@@ -1,4 +1,3 @@
-import { createParser, type Parser, type ParserEvent } from 'eventsource-parser'
 import type { Issue } from '~/types'
 
 /**

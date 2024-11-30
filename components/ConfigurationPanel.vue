@@ -78,11 +78,6 @@ const selectedModel = useLocalStorage('selected-model', 'anthropic/claude-3.5-so
 const modelDetails = ref<Record<string, any>>({})
 const selectedModelInfo = computed(() => modelDetails.value[selectedModel.value])
 
-// Watch and sync with store
-watch(selectedModel, (newModel) => {
-  // No need to sync with store anymore
-})
-
 async function fetchModelDetails() {
   try {
     const response = await fetch('https://openrouter.ai/api/v1/models', {

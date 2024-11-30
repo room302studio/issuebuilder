@@ -14,4 +14,13 @@ export interface Issue {
       body: string;
     }>;
   }
+}
+
+export interface GithubUser {
+  id: number
+  login: string
+  name: string | null
+  avatar_url: string
+  html_url: string
+  // Add other GitHub user fields you need
 } 

@@ -1,14 +1,12 @@
-// Import necessary functions from Vue and VueUse
 import { createGlobalState, useLocalStorage } from '@vueuse/core'
 
-// Define the global state using createGlobalState from VueUse
 export const useAppStore = createGlobalState(() => {
-  // useLocalStorage is a VueUse function that creates a ref linked to a localStorage key.
-  // It takes two arguments: the localStorage key and the default value.
   const activeItem = useLocalStorage('activeItem', null)
   const itemList = useLocalStorage('itemList', [])
+  const githubToken = useLocalStorage('github-token', '')
+  const repositories = useLocalStorage('repositories', [])
+  const selectedRepository = useLocalStorage('selectedRepository', null)
 
-  // Define actions that mutate the state. These are functions that modify the refs.
   const setActiveItem = (item) => {
     activeItem.value = item
   }
@@ -24,12 +22,36 @@ export const useAppStore = createGlobalState(() => {
     }
   }
 
-  // The object returned here will be the global state that can be accessed in any component.
+  const fetchRepositories = async () => {
+    if (!githubToken.value) return
+
+    try {
+      const response = await fetch('https://api.github.com/user/repos', {
+        headers: {
+          Authorization: `Bearer ${githubToken.value}`
+        }
+      })
+      const data = await response.json()
+      repositories.value = data
+    } catch (error) {
+      console.error('Error fetching repositories:', error)
+    }
+  }
+
+  const setSelectedRepository = (repository) => {
+    selectedRepository.value = repository
+  }
+
   return {
     activeItem,
     itemList,
+    githubToken,
+    repositories,
+    selectedRepository,
     setActiveItem,
     addItem,
     removeItem,
+    fetchRepositories,
+    setSelectedRepository,
   }
 })
