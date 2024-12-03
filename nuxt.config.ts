@@ -39,9 +39,9 @@ export default defineNuxtConfig({
 
   // Runtime config
   runtimeConfig: {
+    githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
-    githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
     public: {
       siteUrl: process.env.SITE_URL || 'http://localhost:3000',
       githubClientId: process.env.GITHUB_CLIENT_ID
@@ -64,11 +64,27 @@ export default defineNuxtConfig({
   supabase: {
     redirectOptions: {
       login: '/auth/login',
-      callback: '/auth/confirm',
-      exclude: ['/auth/login', '/auth/confirm']
+      callback: '/auth/callback',
+      exclude: ['/auth/login', '/auth/callback', '/'],
+      cookieRedirect: true
     },
     cookieOptions: {
-      secure: process.env.NODE_ENV === 'production'
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      sameSite: 'lax'
+    },
+    clientOptions: {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce',
+        providers: {
+          github: {
+            scopes: 'repo read:user user:email'
+          }
+        }
+      }
     }
   },
 
@@ -98,5 +114,16 @@ export default defineNuxtConfig({
         'isomorphic-dompurify'
       ]
     }
+  },
+
+  // Add UI config if needed
+  ui: {
+    icons: ['heroicons', 'mdi']
+  },
+
+  colorMode: {
+    preference: 'dark',
+    fallback: 'dark',
+    classSuffix: ''
   }
 })

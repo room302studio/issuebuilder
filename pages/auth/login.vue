@@ -37,15 +37,21 @@ async function handleGitHubLogin() {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: `${config.public.SITE_URL}/auth/confirm`,
-        scopes: 'repo'
+        redirectTo: `${config.public.siteUrl}/auth/confirm`,
+        scopes: 'repo read:user user:email',
+        queryParams: {
+          access_type: 'offline',
+        }
       }
     })
     if (error) throw error
-  } catch (error) {
+
+    console.log('Auth response:', data)
+  } catch (error: any) {
+    console.error('Auth error:', error)
     toast.add({
       title: 'Error signing in with GitHub',
-      description: error.message,
+      description: error?.message || 'Authentication failed',
       color: 'red'
     })
   } finally {

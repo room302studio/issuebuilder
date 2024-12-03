@@ -2,20 +2,33 @@
   <div
     class="relative grid grid-cols-1 lg:grid-cols-[1fr,280px] gap-6 max-w-6xl mx-auto p-4 md:p-6 pt-[10vh] dark:bg-gray-900">
     <div class="max-w-2xl">
-      <h1 class="text-2xl font-bold mb-[8vh] dark:text-white">Document to Issues Parser</h1>
+      <!-- Header Section -->
+      <div class="mb-8 space-y-4">
+        <h1 class="text-2xl font-bold flex items-center gap-2 dark:text-white">
+          <Icon name="heroicons:document-text" class="w-7 h-7 text-primary-500" />
+          IssueBuilder
+        </h1>
+        <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
+          Transform your development documents, plans, and written text into atomic, actionable GitHub issues.
+          IssueBuilder uses AI to analyze your text and create well-structured issues in the repository of your choice.
+        </p>
+      </div>
+
+      <!-- Configuration Panel First -->
+      <ConfigurationPanel :is-processing="isProcessing" @update:api-key="updateApiKey" @update:model="updateModel"
+        class="mb-8" />
 
       <!-- Document Input -->
-      <div class="mb-6">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-          Paste your document here
+      <div class="mb-8">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+          <Icon name="heroicons:document-plus" class="w-5 h-5" />
+          Paste your document
         </label>
         <textarea v-model="documentText"
           class="w-full h-[30vh] p-3 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-          :disabled="isProcessing" placeholder="Paste your document text here..." />
+          :disabled="isProcessing"
+          placeholder="Paste your requirements, planning documents, or any text you'd like to convert into GitHub issues..." />
       </div>
-
-      <!-- Configuration Panel -->
-      <ConfigurationPanel :is-processing="isProcessing" @update:api-key="updateApiKey" @update:model="updateModel" />
 
       <!-- Process Button with Cancel -->
       <div class="w-full mb-8">
@@ -26,14 +39,15 @@
         </UButton>
         <UButton v-else @click="cancelGeneration" color="red" size="xl" block
           class="flex items-center justify-center gap-2">
-          <Icon name="heroicons:x-circle" class="w-6 h-6" />
+          <Icon name="heroicons:stop-circle" class="w-6 h-6" />
           Cancel Generation
         </UButton>
       </div>
 
       <!-- Error Display -->
-      <div v-if="error" class="mb-[8vh] p-6 bg-red-50 text-red-600 rounded-md">
-        {{ error.message }}
+      <div v-if="error" class="mb-8 p-6 bg-red-50 text-red-600 rounded-md flex items-start gap-3">
+        <Icon name="heroicons:exclamation-triangle" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+        <div>{{ error.message }}</div>
       </div>
 
       <!-- Issues Display Component -->
@@ -45,7 +59,7 @@
 
     <!-- Table of Contents -->
     <ClientOnly>
-      <TableOfContents v-if="hasIssues" :issues="store.itemList" />
+      <TableOfContents v-if="hasIssues" :issues="store.itemList?.value || []" />
     </ClientOnly>
   </div>
 
@@ -74,6 +88,13 @@ const commandPalette = ref()
 const loadingSkeletons = ref<number[]>([])
 const showCustomPrompt = ref(false)
 
+// Initialize store.itemList if needed
+onMounted(() => {
+  if (!store.itemList.value) {
+    store.itemList.value = []
+  }
+})
+
 // Computed
 const canGenerate = computed(() => {
   return Boolean(
@@ -84,7 +105,9 @@ const canGenerate = computed(() => {
   )
 })
 
-const hasIssues = computed(() => store.itemList.value.length > 0)
+const hasIssues = computed(() => {
+  return store.itemList.value?.length > 0
+})
 
 const showIssuesDisplay = computed(() => {
   return hasIssues.value || loadingSkeletons.value.length > 0
@@ -127,7 +150,8 @@ Always format your responses using XML tags for each issue:
 <IssueTitle>Issue title here</IssueTitle>
 <IssueText>Issue description here</IssueText>
 
-Do not include numbers, bullet points, or any other formatting - just the XML tags.`
+Do not include numbers, bullet points, or any other formatting - just the XML tags.
+Each issue should be complete and atomic.`
     },
     {
       role: 'user',
@@ -135,9 +159,9 @@ Do not include numbers, bullet points, or any other formatting - just the XML ta
     }
   ]
 
-  if (includeExisting && store.itemList.value.length) {
+  if (includeExisting && store.itemList.value?.length) {
     const existingIssuesText = store.itemList.value
-      .map(issue => `<IssueTitle>${issue.title}</IssueTitle>\n<IssueText>${issue.body}</IssueText>`)
+      .map((issue: Issue) => `<IssueTitle>${issue.title}</IssueTitle>\n<IssueText>${issue.body}</IssueText>`)
       .join('\n\n')
 
     messages.push({

@@ -183,7 +183,6 @@ async function generateMoreWithPrompt() {
   // ... (copy the generateMoreWithPrompt implementation from index.vue)
 }
 </script>
-
 <style scoped>
 .animate-flutter {
   animation: flutter 0.5s ease-out;

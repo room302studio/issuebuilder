@@ -6,20 +6,16 @@
           <!-- Logo -->
           <div class="flex-shrink-0 flex items-center">
             <NuxtLink to="/" class="text-gray-900 dark:text-white font-semibold">
-              Issue Parser
+              IssueBuilder.com
             </NuxtLink>
           </div>
         </div>
 
         <!-- Right side -->
         <div class="flex items-center gap-3">
-          <!-- Theme Toggle -->
-          <UButton color="gray" variant="ghost"
-            :icon="colorMode.value === 'dark' ? 'i-heroicons-sun' : 'i-heroicons-moon'" @click="toggleDark()" />
-
           <!-- Show these options when logged in -->
           <template v-if="user">
-            <UDropdown :items="userMenuItems">
+            <UDropdown :items="userMenuItems" :pointerEvents="false">
               <UButton color="gray" variant="ghost">
                 <div class="flex items-center gap-2">
                   <UAvatar :src="user?.user_metadata?.avatar_url" :alt="user?.user_metadata?.name || user?.email"
@@ -29,12 +25,19 @@
                 </div>
               </UButton>
             </UDropdown>
-            <UButton color="gray" variant="ghost" @click="linkWithGitHub">
-              Link with GitHub
-            </UButton>
+
+            <!-- GitHub Link Button -->
+            <template v-if="!hasGitHubAccess">
+              <UButton color="gray" variant="ghost" to="/auth/login" :pointerEvents="false">
+                <template #leading>
+                  <Icon name="mdi:github" />
+                </template>
+                Link with GitHub
+              </UButton>
+            </template>
           </template>
 
-          <!-- Show login button when logged out -->
+          <!-- Login Button -->
           <template v-else>
             <UButton color="gray" variant="ghost" to="/auth/login">
               Sign In
@@ -47,9 +50,13 @@
 </template>
 
 <script setup lang="ts">
+defineEmits(['pointerenter', 'focus'])
+
 const user = useSupabaseUser()
 const colorMode = useColorMode()
 const client = useSupabaseClient()
+const { data: sessionData } = await client.auth.getSession()
+const sessionRef = ref(sessionData?.session)
 
 // User menu items
 const userMenuItems = computed(() => [
@@ -57,7 +64,8 @@ const userMenuItems = computed(() => [
     {
       label: 'Account Settings',
       icon: 'i-heroicons-cog-6-tooth',
-      to: '/settings'
+      to: '/settings',
+      pointerEvents: false,
     }
   ],
   [
@@ -67,12 +75,19 @@ const userMenuItems = computed(() => [
       click: async () => {
         await client.auth.signOut()
         navigateTo('/auth/login')
-      }
+      },
+      pointerEvents: false,
     }
   ]
 ])
 
-// Fix the toggleDark function
+// Ensure colorMode is initialized
+onMounted(() => {
+  if (!colorMode.value) {
+    colorMode.preference = 'light'
+  }
+})
+
 function toggleDark() {
   colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
 }
@@ -91,4 +106,26 @@ async function linkWithGitHub() {
     console.error('Error linking with GitHub:', error)
   }
 }
+
+// Add computed for GitHub access
+const hasGitHubAccess = computed(() => {
+  return !!sessionRef.value?.provider_token
+})
+
+// Keep session in sync
+onMounted(() => {
+  const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
+    sessionRef.value = session
+  })
+
+  onUnmounted(() => {
+    subscription.unsubscribe()
+  })
+})
 </script>
+
+<style scoped>
+.router-link:hover {
+  @apply bg-gray-50 dark:bg-gray-800;
+}
+</style>
