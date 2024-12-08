@@ -34,19 +34,13 @@ const toast = useToast()
 async function handleGitHubLogin() {
   loading.value = true
   try {
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: `${config.public.siteUrl}/auth/confirm`,
-        scopes: 'repo read:user user:email',
-        queryParams: {
-          access_type: 'offline',
-        }
+        redirectTo: `${config.public.siteUrl}/auth/callback`
       }
     })
     if (error) throw error
-
-    console.log('Auth response:', data)
   } catch (error: any) {
     console.error('Auth error:', error)
     toast.add({

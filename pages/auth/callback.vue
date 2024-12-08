@@ -22,43 +22,49 @@
 <script setup lang="ts">
 const error = ref<string | null>(null)
 const user = useSupabaseUser()
+const client = useSupabaseClient()
 
-// Add debug logging
-function logAuthState() {
-  console.log('🔍 Auth Callback State:', {
-    user: {
-      exists: !!user.value,
-      id: user.value?.id,
-      email: user.value?.email,
-      metadata: user.value?.user_metadata,
-      appMetadata: user.value?.app_metadata
-    },
-    route: useRoute().fullPath,
-    query: useRoute().query
-  })
-}
-
-// Watch for user state changes
-watch(user, async (newUser) => {
-  console.log('👤 User state changed:', newUser ? 'Logged in' : 'Logged out')
-  logAuthState()
-
-  if (newUser) {
-    // Get the session to access provider token
-    const { data: { session } } = await useSupabaseClient().auth.getSession()
-    console.log('Session data:', {
-      providerToken: session?.provider_token,
-      providerId: session?.provider_refresh_token,
-      user: session?.user
+// Handle the auth callback
+onMounted(async () => {
+  console.log('🔄 Auth callback mounted, checking session...')
+  try {
+    const route = useRoute()
+    console.log('📍 Route state:', {
+      hash: route.hash,
+      code: route.query.code,
+      error: route.query.error
     })
 
-    console.log('✅ User authenticated, redirecting to home')
+    if (!route.query.code && !route.hash) {
+      throw new Error('No authentication code received')
+    }
+
+    if (route.query.error) {
+      throw new Error(route.query.error_description as string || 'Authentication was rejected')
+    }
+
+    if (route.query.code) {
+      console.log('🔑 Exchanging code for session...')
+      const { data, error: authError } = await client.auth.exchangeCodeForSession(String(route.query.code))
+      if (authError) throw authError
+
+      console.log('✅ Session exchange result:', {
+        success: !!data?.session,
+        user: data?.session?.user?.email
+      })
+    }
+  } catch (e: any) {
+    console.error('❌ Auth callback error:', e)
+    error.value = e?.message || 'Authentication failed. Please try again.'
+  }
+})
+
+// Watch for user state changes and redirect when authenticated
+watch(user, (newUser) => {
+  console.log('👤 User state changed:', newUser ? `Logged in as ${newUser.email}` : 'Not logged in')
+  if (newUser) {
+    console.log('🏠 Redirecting to home...')
     navigateTo('/')
   }
 }, { immediate: true })
-
-onMounted(() => {
-  console.log('🏁 Auth callback mounted')
-  logAuthState()
-})
 </script>
