@@ -7,6 +7,9 @@
         <h1 class="text-2xl font-bold flex items-center gap-2 dark:text-white">
           <Icon name="heroicons:document-text" class="w-7 h-7 text-primary-500" />
           IssueBuilder
+          <span v-if="store.currentProject" class="text-sm font-normal text-gray-500">
+            • {{ store.currentProject.name }}
+          </span>
         </h1>
         <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
           Transform your development documents, plans, and written text into atomic, actionable GitHub issues.
@@ -18,24 +21,34 @@
       <ConfigurationPanel :is-processing="isProcessing" @update:api-key="updateApiKey" @update:model="updateModel"
         class="mb-8" />
 
-      <!-- Document Input -->
+      <!-- Project Manager -->
+      <ProjectManager 
+        :model-value="showProjectManager" 
+        @update:model-value="showProjectManager = $event" 
+        class="mb-8" 
+      />
+
+      <!-- Text Input -->
       <div class="mb-8">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-          <Icon name="heroicons:document-plus" class="w-5 h-5" />
-          Paste your document
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+          <Icon name="heroicons:document-text" class="w-5 h-5" />
+          Document Text
         </label>
-        <textarea v-model="documentText"
-          class="w-full h-[30vh] p-3 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-          :disabled="isProcessing"
-          placeholder="Paste your requirements, planning documents, or any text you'd like to convert into GitHub issues..." />
+        <UTextarea v-model="documentText" :rows="10" :disabled="isProcessing" placeholder="Paste your document text here..."
+          class="font-mono text-sm" />
       </div>
 
       <!-- Process Button with Cancel -->
       <div class="w-full mb-8">
         <UButton v-if="!isProcessing" @click="processDocument" :disabled="!canGenerate" color="primary" size="xl" block
-          class="flex items-center justify-center gap-2">
+          class="flex items-center justify-center gap-2 relative group" :tooltip="generateButtonTooltip"
+          :tooltip-placement="canGenerate ? 'top' : 'right'"
+          :tooltip-class="canGenerate ? '' : 'whitespace-pre text-left'">
           <Icon name="heroicons:sparkles" class="w-6 h-6" />
           Generate Issues
+          <div v-if="!canGenerate" class="absolute -right-2 top-1/2 -translate-y-1/2 translate-x-full hidden group-hover:block">
+            <Icon name="heroicons:information-circle" class="w-5 h-5 text-gray-400" />
+          </div>
         </UButton>
         <UButton v-else @click="cancelGeneration" color="red" size="xl" block
           class="flex items-center justify-center gap-2">
@@ -87,6 +100,7 @@ const commandPalette = ref()
 // State
 const loadingSkeletons = ref<number[]>([])
 const showCustomPrompt = ref(false)
+const showProjectManager = ref(false)
 
 // Initialize store.itemList if needed
 onMounted(() => {
@@ -96,13 +110,47 @@ onMounted(() => {
 })
 
 // Computed
+const generateButtonTooltip = computed(() => {
+  if (canGenerate.value) return 'Press Generate Issues or use Cmd+Enter to start'
+  
+  const reasons = []
+  if (!documentText.value?.trim()) {
+    reasons.push('📝 No text to analyze - paste your document in the text area')
+  }
+  if (!apiKey.value?.trim()) {
+    reasons.push('🔑 Missing API key - add your OpenRouter API key in the configuration panel')
+  }
+  if (!selectedModel.value) {
+    reasons.push('🤖 No model selected - choose a language model in the configuration panel')
+  }
+  if (isProcessing.value) {
+    reasons.push('⏳ Currently processing - please wait')
+  }
+
+  if (reasons.length === 0) {
+    reasons.push('🤔 Button disabled but all conditions seem met - please check console for debug info')
+  }
+  
+  return `Can't generate issues yet:\n${reasons.join('\n')}`
+})
+
 const canGenerate = computed(() => {
-  return Boolean(
-    documentText.value?.trim() &&
-    apiKey.value?.trim() &&
-    !isProcessing.value &&
-    selectedModel.value
-  )
+  const hasText = Boolean(documentText.value?.trim())
+  const hasApiKey = Boolean(apiKey.value?.trim())
+  const hasModel = Boolean(selectedModel.value)
+  const notProcessing = !isProcessing.value
+
+  console.log('Generate button state:', {
+    hasText,
+    hasApiKey,
+    hasModel,
+    notProcessing,
+    textLength: documentText.value?.length,
+    apiKeyLength: apiKey.value?.length,
+    selectedModel: selectedModel.value
+  })
+  
+  return hasText && hasApiKey && hasModel && notProcessing
 })
 
 const hasIssues = computed(() => {
@@ -122,11 +170,16 @@ async function processDocument() {
     documentLength: documentText.value.length
   })
 
-  loadingSkeletons.value = [1, 2, 3]
-
   try {
     store.itemList.value = []
     await streamIssues(apiKey.value, generatePrompt(false), true, selectedModel.value)
+
+    // Create a new project after successful generation
+    const { $prompt } = useNuxtApp()
+    const projectName = await $prompt('Enter a name for this project')
+    if (projectName) {
+      await store.createProject(projectName, documentText.value)
+    }
 
     clickhouse.insertEvent('generation-complete', 1, {
       model: selectedModel.value,

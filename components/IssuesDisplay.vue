@@ -170,8 +170,70 @@ function clearAllIssues() {
 }
 
 async function handleSplit(issue: Issue, index: number) {
-  // Implementation remains the same as in index.vue
-  // ... (copy the handleSplit implementation from index.vue)
+  const { streamIssues } = useLLMToIssues()
+  const { splitIssuePrompt } = usePrompts()
+  const apiKey = useLocalStorage('openrouter-api-key', '')
+  const selectedModel = useLocalStorage('selected-model', 'anthropic/claude-3.5-sonnet:beta')
+
+  // Add the index to combining indices to show animation
+  combiningIndices.value = [index]
+  splitIssues.value = [{}, {}]
+
+  try {
+    // Get the initial length of the itemList
+    const initialLength = store.itemList.value.length
+
+    // Stream the split issues
+    await streamIssues(
+      apiKey.value,
+      splitIssuePrompt(issue),
+      false,
+      selectedModel.value
+    )
+
+    // Get the new issues that were added (should be exactly 2)
+    const newIssues = store.itemList.value.slice(initialLength)
+    
+    if (newIssues.length !== 2) {
+      throw new Error('Expected exactly 2 new issues from split operation')
+    }
+
+    // Add split history to the new issues
+    newIssues.forEach(newIssue => {
+      newIssue.history = {
+        splitFrom: {
+          title: issue.title,
+          body: issue.body
+        },
+        splitAt: new Date().toISOString()
+      }
+    })
+
+    // Remove the original issue
+    store.removeItem(issue)
+
+    // Clear the animation states
+    combiningIndices.value = []
+    splitIssues.value = [{}, {}]
+
+    // Show success message
+    toast.add({
+      title: 'Issue Split',
+      description: 'Successfully split the issue into two new issues.',
+      color: 'green'
+    })
+  } catch (error) {
+    console.error('Error splitting issue:', error)
+    toast.add({
+      title: 'Error',
+      description: 'Failed to split issue. Please try again.',
+      color: 'red'
+    })
+  } finally {
+    // Always clear animation states
+    combiningIndices.value = []
+    splitIssues.value = [{}, {}]
+  }
 }
 
 function renderedBody(text: string) {
@@ -198,5 +260,13 @@ async function generateMoreWithPrompt() {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.prose {
+  @apply text-gray-300;
+}
+
+.dark .prose {
+  @apply text-gray-100;
 }
 </style>
