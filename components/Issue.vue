@@ -252,6 +252,10 @@ div:nth-child(5) .animate-flutter {
   @apply text-gray-600;
 }
 
+.dark .prose {
+  @apply text-gray-100;
+}
+
 .prose p {
   @apply my-2;
 }

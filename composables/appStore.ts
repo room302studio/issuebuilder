@@ -1,5 +1,6 @@
 import { createGlobalState, useStorage } from '@vueuse/core'
 import type { Issue } from '~/types'
+import { TABLE_NAMES, COLUMNS } from '~/constants/supabase'
 
 interface Repository {
   id: number
@@ -14,6 +15,18 @@ interface Repository {
   }
 }
 
+interface Project {
+  id: string
+  name: string
+  created_at: string
+  updated_at: string
+  issues: Issue[]
+  document_text: string
+  repository?: Repository
+  model: string
+  user_id: string
+}
+
 export const useAppStore = createGlobalState(() => {
   // Persistent state
   const repositories = useStorage('repositories', [] as Repository[])
@@ -21,7 +34,9 @@ export const useAppStore = createGlobalState(() => {
     'selected-model',
     'anthropic/claude-3.5-sonnet:beta'
   )
+  const githubToken = useStorage('github-token', null as string | null)
   const itemList = ref<Issue[]>([])
+  const currentProject = ref<Project | null>(null)
 
   // Actions
   const fetchRepositories = async () => {
@@ -83,10 +98,122 @@ export const useAppStore = createGlobalState(() => {
     }
   }
 
+  const removeItem = (issue: Issue) => {
+    const index = itemList.value.findIndex((i) => i.id === issue.id)
+    if (index !== -1) {
+      itemList.value.splice(index, 1)
+    }
+  }
+
+  // Project management
+  const createProject = async (name: string, documentText: string) => {
+    const client = useSupabaseClient()
+    const user = useSupabaseUser()
+
+    if (!user.value) throw new Error('User not authenticated')
+
+    const project: Omit<Project, 'id'> = {
+      [COLUMNS.PROJECTS.NAME]: name,
+      [COLUMNS.PROJECTS.CREATED_AT]: new Date().toISOString(),
+      [COLUMNS.PROJECTS.UPDATED_AT]: new Date().toISOString(),
+      [COLUMNS.PROJECTS.ISSUES]: itemList.value,
+      [COLUMNS.PROJECTS.DOCUMENT_TEXT]: documentText,
+      [COLUMNS.PROJECTS.REPOSITORY]: repositories.value.find(
+        (r) => r.id === currentProject.value?.repository?.id
+      ),
+      [COLUMNS.PROJECTS.MODEL]: selectedModel.value,
+      [COLUMNS.PROJECTS.USER_ID]: user.value.id
+    }
+
+    const { data, error } = await client
+      .from(TABLE_NAMES.PROJECTS)
+      .insert(project)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    currentProject.value = data
+    return data
+  }
+
+  const updateProject = async () => {
+    if (!currentProject.value) return
+
+    const client = useSupabaseClient()
+    const update = {
+      ...currentProject.value,
+      [COLUMNS.PROJECTS.UPDATED_AT]: new Date().toISOString(),
+      [COLUMNS.PROJECTS.ISSUES]: itemList.value
+    }
+
+    const { error } = await client
+      .from(TABLE_NAMES.PROJECTS)
+      .update(update)
+      .eq(COLUMNS.PROJECTS.ID, currentProject.value.id)
+
+    if (error) throw error
+  }
+
+  const loadProject = async (id: string) => {
+    const client = useSupabaseClient()
+    const { data, error } = await client
+      .from(TABLE_NAMES.PROJECTS)
+      .select()
+      .eq(COLUMNS.PROJECTS.ID, id)
+      .single()
+
+    if (error) throw error
+
+    currentProject.value = data
+    itemList.value = data.issues
+    selectedModel.value = data.model
+    return data
+  }
+
+  const listProjects = async () => {
+    const client = useSupabaseClient()
+    const user = useSupabaseUser()
+
+    if (!user.value) throw new Error('User not authenticated')
+
+    const { data, error } = await client
+      .from(TABLE_NAMES.PROJECTS)
+      .select()
+      .eq(COLUMNS.PROJECTS.USER_ID, user.value.id)
+      .order(COLUMNS.PROJECTS.UPDATED_AT, { ascending: false })
+
+    if (error) throw error
+    return data
+  }
+
+  const deleteProject = async (id: string) => {
+    const client = useSupabaseClient()
+    const { error } = await client
+      .from(TABLE_NAMES.PROJECTS)
+      .delete()
+      .eq(COLUMNS.PROJECTS.ID, id)
+
+    if (error) throw error
+
+    if (currentProject.value?.id === id) {
+      currentProject.value = null
+      itemList.value = []
+    }
+  }
+
   return {
     repositories,
     selectedModel,
     fetchRepositories,
-    itemList
+    itemList,
+    removeItem,
+    githubToken,
+    currentProject,
+    createProject,
+    updateProject,
+    loadProject,
+    listProjects,
+    deleteProject
   }
 })
