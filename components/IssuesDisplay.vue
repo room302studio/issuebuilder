@@ -4,7 +4,7 @@
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
       <div>
         <h2 class="text-xl font-semibold dark:text-white">Generated Issues</h2>
-        <p class="text-sm text-gray-600 dark:text-gray-400">Total: {{ store.itemList.value.length }}</p>
+        <p class="text-sm text-zinc-600 dark:text-zinc-400">Total: {{ store.itemList.value.length }}</p>
       </div>
       <UButton @click="clearAllIssues" color="gray" variant="ghost" size="sm">
         Clear All
@@ -16,13 +16,13 @@
       <TransitionGroup name="issue" tag="div" class="space-y-[4vh]">
         <!-- Loading skeletons - Only show if no real issues exist -->
         <div v-if="!hasRealIssues" v-for="(_, index) in loadingSkeletons" :key="`skeleton-${index}`"
-          class="p-4 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700">
+          class="p-4 border rounded-md bg-white dark:bg-zinc-800 dark:border-zinc-700">
           <div class="space-y-4">
             <div class="flex items-center justify-between">
               <USkeleton class="h-6 w-2/3" />
               <div class="flex gap-2 opacity-50">
-                <div class="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded" />
-                <div class="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded" />
+                <div class="w-5 h-5 bg-zinc-200 dark:bg-zinc-700 rounded" />
+                <div class="w-5 h-5 bg-zinc-200 dark:bg-zinc-700 rounded" />
               </div>
             </div>
             <div class="space-y-2">
@@ -41,10 +41,10 @@
             <div class="relative">
               <Issue :issue="issue" :index="index" class="opacity-50" />
               <div class="absolute inset-0 flex items-center justify-center">
-                <div class="bg-purple-50/80 dark:bg-purple-900/80 backdrop-blur-sm rounded-md px-4 py-2">
+                <div class="bg-zinc-100/80 dark:bg-zinc-800/80 backdrop-blur-sm rounded-md px-4 py-2">
                   <Icon name="material-symbols-light:arrow-split-rounded"
-                    class="w-8 h-8 text-purple-400 animate-bounce" />
-                  <p class="text-purple-600 dark:text-purple-300 font-medium font-game text-center">
+                    class="w-8 h-8 text-zinc-600 dark:text-zinc-400 animate-bounce" />
+                  <p class="text-zinc-700 dark:text-zinc-300 font-medium font-game text-center">
                     Splitting...
                   </p>
                 </div>
@@ -54,7 +54,7 @@
             <!-- Skeleton/streaming placeholders for new issues -->
             <div class="space-y-4">
               <div v-for="(splitIssue, splitIndex) in splitIssues" :key="`split-${splitIndex}`"
-                class="p-4 border rounded-md bg-white dark:bg-gray-800 relative overflow-hidden">
+                class="p-4 border rounded-md bg-white dark:bg-zinc-800 relative overflow-hidden">
                 <div class="space-y-4">
                   <div class="flex items-center gap-2">
                     <!-- Title skeleton/streaming -->
@@ -72,7 +72,7 @@
                     <USkeleton class="h-4 w-5/6" />
                     <USkeleton class="h-4 w-4/6" />
                   </div>
-                  <div v-else class="prose prose-sm max-w-none text-gray-600 dark:text-gray-300 animate-flutter"
+                  <div v-else class="prose prose-sm max-w-none text-zinc-600 dark:text-zinc-300 animate-flutter"
                     v-html="renderedBody(splitIssue.body)" />
                 </div>
               </div>
@@ -89,23 +89,23 @@
     <!-- Generate More Section -->
     <div v-if="!isProcessing" class="space-y-[6vh] mt-[12vh]">
       <!-- Custom Prompt Input -->
-      <div v-if="showCustomPrompt" class="p-4 border rounded-md bg-gray-50 max-w-2xl">
+      <div v-if="showCustomPrompt" class="p-4 border rounded-md bg-zinc-50 dark:bg-zinc-800/50 max-w-2xl">
         <div class="flex justify-between items-center mb-2">
-          <label class="text-sm font-medium text-gray-700">Custom Generation Prompt</label>
+          <label class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Custom Generation Prompt</label>
           <UButton @click="showCustomPrompt = false" color="gray" variant="ghost" icon="i-heroicons-x-mark">
             <Icon name="heroicons:x-mark" />
           </UButton>
         </div>
         <textarea v-model="customPrompt" class="w-full h-24 p-2 border rounded-md mb-2 text-sm"
           placeholder="E.g.: Focus on performance issues, or Generate issues related to accessibility..." />
-        <UButton @click="generateMoreWithPrompt" :disabled="!customPrompt.trim()" color="purple">
+        <UButton @click="generateMoreWithPrompt" :disabled="!customPrompt.trim()" color="primary">
           Generate Issues with Prompt
         </UButton>
       </div>
 
       <!-- Action Buttons -->
       <div class="flex gap-2 max-w-lg">
-        <UButton v-if="!showCustomPrompt" @click="showCustomPrompt = true" color="purple" variant="outline">
+        <UButton v-if="!showCustomPrompt" @click="showCustomPrompt = true" color="gray" variant="outline">
           Generate with Custom Prompt...
         </UButton>
         <UButton @click="$emit('generate-more')" color="primary" variant="outline">
@@ -115,10 +115,10 @@
     </div>
 
     <!-- GitHub Export Button -->
-    <div v-if="store.itemList.value.length" class="mt-[12vh] border-t border-gray-200 dark:border-gray-700 pt-8">
+    <div v-if="store.itemList.value.length" class="mt-[12vh] border-t border-zinc-200 dark:border-zinc-700 pt-8">
       <!-- Show login button if not authenticated -->
       <div v-if="!store.githubToken" class="space-y-4">
-        <p class="text-sm text-gray-600 dark:text-gray-400">Connect your GitHub account to export issues</p>
+        <p class="text-sm text-zinc-600 dark:text-zinc-400">Connect your GitHub account to export issues</p>
         <GitHubLoginButton />
       </div>
 

@@ -21,6 +21,10 @@ export const useAppStore = createGlobalState(() => {
     'selected-model',
     'anthropic/claude-3.5-sonnet:beta'
   )
+  const selectedRepository = useStorage(
+    'selected-repository',
+    null as Repository | null
+  )
   const itemList = ref<Issue[]>([])
 
   // Actions
@@ -83,10 +87,17 @@ export const useAppStore = createGlobalState(() => {
     }
   }
 
+  // Add repository selection
+  const selectRepository = async (repo: Repository | null) => {
+    selectedRepository.value = repo
+  }
+
   return {
     repositories,
     selectedModel,
+    selectedRepository,
     fetchRepositories,
+    selectRepository,
     itemList
   }
 })

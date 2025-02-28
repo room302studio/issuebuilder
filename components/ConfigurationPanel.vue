@@ -2,7 +2,7 @@
   <div class="space-y-6 mb-8">
     <!-- API Key Input -->
     <div class="space-y-2">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+      <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
         <Icon name="heroicons:key" class="w-5 h-5" />
         OpenRouter API Key
       </label>
@@ -13,16 +13,16 @@
             :loading="isProcessing" @click="toggleApiKeyVisibility" square />
         </template>
       </UInput>
-      <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+      <div class="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
         <Icon name="heroicons:information-circle" class="w-4 h-4" />
         Get your API key from <a href="https://openrouter.ai/keys" target="_blank"
-          class="text-primary-500 hover:underline">OpenRouter</a>
+          class="text-zinc-700 dark:text-zinc-300 hover:underline">OpenRouter</a>
       </div>
     </div>
 
     <!-- Model Selection -->
     <div class="space-y-2">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+      <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
         <Icon name="heroicons:cpu-chip" class="w-5 h-5" />
         Language Model
       </label>
@@ -31,7 +31,7 @@
         value: id
       }))" :disabled="isProcessing" @update:model-value="$emit('update:model', $event)" />
       <!-- Model Info -->
-      <div v-if="selectedModelInfo" class="text-xs text-gray-500 space-y-1">
+      <div v-if="selectedModelInfo" class="text-xs text-zinc-500 space-y-1">
         <div class="flex flex-wrap gap-2">
           <span v-if="selectedModelInfo.pricing?.prompt">
             Input: ${{ formatPrice(selectedModelInfo.pricing.prompt) }}/1K tokens

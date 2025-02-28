@@ -6,7 +6,7 @@ export interface Issue {
   skeleton?: boolean
   history?: {
     splitFrom?: {
-      title: string
+      // title: string
       body: string
     }
     splitAt?: string

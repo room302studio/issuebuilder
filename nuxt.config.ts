@@ -20,6 +20,11 @@ export default defineNuxtConfig({
   // Development
   devtools: { enabled: true },
 
+  // Server configuration to handle large headers
+  server: {
+    maxHeaderSize: 32768 // 32KB max header size
+  },
+
   // Core modules
   modules: [
     '@nuxt/ui',
@@ -43,7 +48,10 @@ export default defineNuxtConfig({
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
     public: {
-      siteUrl: process.env.SITE_URL || 'http://localhost:3000',
+      siteUrl:
+        process.env.NODE_ENV === 'production'
+          ? process.env.SITE_URL || 'https://issuebuilder.com'
+          : undefined, // Let Nuxt handle the development URL dynamically
       githubClientId: process.env.GITHUB_CLIENT_ID
     }
   },
@@ -71,7 +79,8 @@ export default defineNuxtConfig({
     cookieOptions: {
       secure: process.env.NODE_ENV === 'production',
       path: '/',
-      sameSite: 'lax'
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 8 // 8 hours (shorter session might help with header size)
     },
     clientOptions: {
       auth: {
@@ -81,6 +90,7 @@ export default defineNuxtConfig({
         flowType: 'pkce',
         providers: {
           github: {
+            enabled: true,
             scopes: 'repo read:user user:email'
           }
         }
@@ -118,7 +128,18 @@ export default defineNuxtConfig({
 
   // Add UI config if needed
   ui: {
-    icons: ['heroicons', 'mdi']
+    colors: {
+      primary: 'green',
+      gray: 'zinc'
+    },
+    strategy: 'merge',
+    tailwindMerge: {
+      extend: {
+        classGroups: {
+          colors: ['zinc']
+        }
+      }
+    }
   },
 
   colorMode: {

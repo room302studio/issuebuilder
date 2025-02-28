@@ -31,13 +31,33 @@ const config = useRuntimeConfig()
 const loading = ref(false)
 const toast = useToast()
 
+// Use runtime URL detection
+const getURL = () => {
+  // In production, use the configured site URL
+  if (process.env.NODE_ENV === 'production') {
+    return config.public.siteUrl
+  }
+  // In development, use the current window location
+  if (process.client) {
+    const url = window.location.origin
+    return url.endsWith('/') ? url : `${url}/`
+  }
+  // Fallback for SSR
+  return 'http://localhost:3000/'
+}
+
 async function handleGitHubLogin() {
   loading.value = true
   try {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: `${config.public.siteUrl}/auth/callback`
+        redirectTo: `${getURL()}auth/callback`,
+        scopes: 'repo',
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent'
+        }
       }
     })
     if (error) throw error
