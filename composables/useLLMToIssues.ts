@@ -103,6 +103,11 @@ export const useLLMToIssues = () => {
     currentText = ''
 
     try {
+      // Create a timeout for the initial connection (30 seconds)
+      const timeoutId = setTimeout(() => {
+        abortController?.abort()
+      }, 30000)
+
       const response = await fetch(
         'https://openrouter.ai/api/v1/chat/completions',
         {
@@ -122,6 +127,9 @@ export const useLLMToIssues = () => {
           signal: abortController.signal
         }
       )
+
+      // Clear the timeout once connection is established
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)

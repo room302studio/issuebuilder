@@ -50,6 +50,8 @@
 </template>
 
 <script setup lang="ts">
+import { MODEL_CONFIGS } from '~/composables/useOpenRouter.js'
+
 const props = defineProps<{
   isProcessing: boolean
 }>()

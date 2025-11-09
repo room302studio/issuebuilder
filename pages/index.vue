@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Landing Page for Unauthenticated Users -->
-    <div v-if="!user" class="min-h-screen bg-white dark:bg-zinc-950 font-mono">
+    <div v-if="!user && !(isAuthDisabled && store.githubToken)" class="min-h-screen bg-white dark:bg-zinc-950 font-mono">
       <!-- Hero Section -->
       <div class="max-w-5xl mx-auto px-4 md:px-12 pt-16 md:pt-28 pb-20">
         <div class="flex flex-col md:flex-row items-center gap-8 mb-16">
@@ -17,11 +17,32 @@
               Convert any document or chat into GitHub issues using our advanced AI. From SOWs to meeting notes to
               requirements docs, turn your text into actionable tasks in seconds.
             </p>
-            <div>
+            <div v-if="!isAuthDisabled">
               <UButton color="primary" size="xl" @click="signIn"
                 class="flex items-center justify-center gap-2 px-8 py-3 font-medium">
                 <Icon name="simple-icons:github" class="w-5 h-5 flex-shrink-0" />
                 <span class="whitespace-nowrap overflow-hidden text-ellipsis">Sign into GitHub to start</span>
+              </UButton>
+            </div>
+            <div v-else class="space-y-4">
+              <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 p-4">
+                <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                  GitHub Personal Access Token
+                </label>
+                <input
+                  v-model="manualGithubToken"
+                  type="password"
+                  placeholder="ghp_..."
+                  class="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-600 rounded-md text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                  Generate a token at <a href="https://github.com/settings/tokens" target="_blank" class="underline">github.com/settings/tokens</a> with <code class="px-1 py-0.5 bg-zinc-200 dark:bg-zinc-700 rounded">repo</code> scope
+                </p>
+              </div>
+              <UButton color="primary" size="xl" @click="handleManualTokenSubmit"
+                class="w-full flex items-center justify-center gap-2 px-8 py-3 font-medium">
+                <Icon name="simple-icons:github" class="w-5 h-5 flex-shrink-0" />
+                <span>Continue with Token</span>
               </UButton>
             </div>
           </div>
@@ -548,7 +569,7 @@
     </div>
 
     <!-- Footer for authenticated users -->
-    <footer v-if="user" class="border-t border-zinc-200 dark:border-zinc-800 py-8 mt-16">
+    <footer v-if="user || (isAuthDisabled && store.githubToken)" class="border-t border-zinc-200 dark:border-zinc-800 py-8 mt-16">
       <div class="max-w-6xl mx-auto px-4 md:px-12">
         <div class="mb-8 flex items-center justify-center">
           <!-- Room 302 Studio Logo -->
@@ -571,6 +592,7 @@ import usePrompts from '~/composables/usePrompts'
 
 const store = useAppStore()
 const { streamIssues, isProcessing, error, cancelGeneration } = useLLMToIssues()
+const { setManualToken, fetchUserData } = useAuth()
 const documentText = useLocalStorage('document-text', '')
 const apiKey = useLocalStorage('openrouter-api-key', '')
 const selectedModel = useLocalStorage('selected-model', 'anthropic/claude-3.5-sonnet:beta')
@@ -580,6 +602,8 @@ const commandPalette = ref()
 const textareaRef = ref<HTMLTextAreaElement>()
 const user = useSupabaseUser()
 const prompts = usePrompts()
+const config = useRuntimeConfig()
+const toast = useToast()
 
 // State
 const loadingSkeletons = ref<number[]>([])
@@ -587,6 +611,8 @@ const showCustomPrompt = ref(false)
 const isRepoModalOpen = ref(false)
 const repoSearchQuery = ref('')
 const selectedOrg = ref<string | null>(null)
+const manualGithubToken = useLocalStorage('manual-github-token', '')
+const isAuthDisabled = computed(() => config.public.disableAuth)
 
 // Add formatters
 const numberFormat = format(',')
@@ -652,6 +678,11 @@ onMounted(async () => {
 
 // Landing page methods
 function signIn() {
+  // If auth is disabled, we don't do OAuth - token is set manually
+  if (isAuthDisabled.value) {
+    return
+  }
+
   // Use Supabase auth directly
   const supabase = useSupabaseClient()
   supabase.auth.signInWithOAuth({
@@ -665,6 +696,39 @@ function signIn() {
       }
     }
   })
+}
+
+async function handleManualTokenSubmit() {
+  if (!manualGithubToken.value.trim()) {
+    toast.add({
+      title: 'Error',
+      description: 'Please enter a GitHub token',
+      color: 'red',
+      timeout: 3000
+    })
+    return
+  }
+
+  try {
+    setManualToken(manualGithubToken.value)
+    await fetchUserData()
+    await store.fetchRepositories()
+
+    toast.add({
+      title: 'Success',
+      description: 'GitHub token validated successfully',
+      color: 'green',
+      timeout: 3000
+    })
+  } catch (error: any) {
+    console.error('Token validation error:', error)
+    toast.add({
+      title: 'Invalid Token',
+      description: 'Could not validate GitHub token. Please check and try again.',
+      color: 'red',
+      timeout: 5000
+    })
+  }
 }
 
 function scrollToDemo() {

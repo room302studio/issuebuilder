@@ -20,6 +20,11 @@ export default defineNuxtConfig({
   // Development
   devtools: { enabled: true },
 
+  // Build transpile configuration
+  build: {
+    transpile: ['isomorphic-dompurify']
+  },
+
   // Server configuration to handle large headers
   server: {
     maxHeaderSize: 32768 // 32KB max header size
@@ -52,7 +57,11 @@ export default defineNuxtConfig({
         process.env.NODE_ENV === 'production'
           ? process.env.SITE_URL || 'https://issuebuilder.com'
           : undefined, // Let Nuxt handle the development URL dynamically
-      githubClientId: process.env.GITHUB_CLIENT_ID
+      githubClientId: process.env.GITHUB_CLIENT_ID,
+      disableAuth: process.env.DISABLE_AUTH === 'true',
+      CLICKHOUSE_HOST: process.env.CLICKHOUSE_HOST || '',
+      CLICKHOUSE_USER: process.env.CLICKHOUSE_USER || 'default',
+      CLICKHOUSE_PASSWORD: process.env.CLICKHOUSE_PASSWORD || ''
     }
   },
 
@@ -84,15 +93,19 @@ export default defineNuxtConfig({
     },
     clientOptions: {
       auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        flowType: 'pkce',
-        providers: {
-          github: {
-            enabled: true,
-            scopes: 'repo read:user user:email'
-          }
+        persistSession: process.env.DISABLE_AUTH !== 'true',
+        autoRefreshToken: process.env.DISABLE_AUTH !== 'true',
+        detectSessionInUrl: process.env.DISABLE_AUTH !== 'true',
+        flowType: 'pkce'
+      },
+      global: {
+        headers: {
+          // Add timeout headers to prevent hung connections
+          'X-Client-Timeout': '5000'
+        },
+        fetch: {
+          // 5 second timeout for all Supabase requests
+          timeout: 5000
         }
       }
     }
@@ -104,12 +117,19 @@ export default defineNuxtConfig({
     prerender: {
       crawlLinks: true,
       routes: ['/']
+    },
+    // Add timeout for external requests to prevent ECONNRESET/EPIPE
+    experimental: {
+      asyncContext: true
+    },
+    routeRules: {
+      // Disable server routes that require Supabase when auth is disabled
+      '/api/stripe-webhook': process.env.DISABLE_AUTH === 'true' ? { cors: true, headers: { 'cache-control': 'no-cache' } } : {},
     }
   },
 
   vite: {
     build: {
-      transpile: ['isomorphic-dompurify'],
       rollupOptions: {
         output: {
           inlineDynamicImports: true
@@ -123,15 +143,19 @@ export default defineNuxtConfig({
         '@nuxt/ui-templates',
         'isomorphic-dompurify'
       ]
+    },
+    server: {
+      // Prevent connection timeouts during development
+      hmr: {
+        protocol: 'ws',
+        timeout: 60000
+      }
     }
   },
 
   // Add UI config if needed
   ui: {
-    colors: {
-      primary: 'green',
-      gray: 'zinc'
-    },
+    global: true,
     strategy: 'merge',
     tailwindMerge: {
       extend: {

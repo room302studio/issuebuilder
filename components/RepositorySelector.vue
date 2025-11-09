@@ -212,8 +212,18 @@ async function exportIssues() {
   isExporting.value = true
   exportedCount.value = 0
 
-  const { data: { session } } = await supabase.auth.getSession()
-  const token = session?.provider_token
+  const config = useRuntimeConfig()
+  let token: string | null = null
+
+  // Get token from either manual auth or OAuth
+  if (config.public.disableAuth) {
+    // Use manually set token when auth is disabled
+    token = store.githubToken || null
+  } else {
+    // Get token from Supabase session when auth is enabled
+    const { data: { session } } = await supabase.auth.getSession()
+    token = session?.provider_token || null
+  }
 
   if (!token) {
     error.value = 'Authentication required'

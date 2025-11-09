@@ -12,6 +12,15 @@ const stripe = new Stripe(STRIPE_SECRET_KEY!, {
 const PRODUCT_ID = '1e3099b8-c3f2-47aa-818c-0cef8767b25f'
 
 export default defineEventHandler(async (event: H3Event) => {
+  // Skip Supabase operations if auth is disabled
+  const config = useRuntimeConfig()
+  const isAuthDisabled = config.public.disableAuth
+
+  if (isAuthDisabled) {
+    console.log('Stripe webhook: Auth disabled, skipping webhook processing')
+    return { received: true, skipped: true }
+  }
+
   try {
     const signature = getHeader(event, 'stripe-signature')
     if (!signature) {

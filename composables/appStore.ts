@@ -26,24 +26,53 @@ export const useAppStore = createGlobalState(() => {
     null as Repository | null
   )
   const itemList = ref<Issue[]>([])
+  const githubToken = useStorage('github-token', null as string | null)
+  const githubUser = useStorage('github-user', null as any)
+
+  // Helper methods
+  const setGithubToken = (token: string | null) => {
+    githubToken.value = token
+  }
+
+  const setGithubUser = (user: any) => {
+    githubUser.value = user
+  }
 
   // Actions
   const fetchRepositories = async () => {
-    const user = useSupabaseUser()
-    const {
-      data: { session }
-    } = await useSupabaseClient().auth.getSession()
+    const config = useRuntimeConfig()
 
-    console.log('🔍 Fetching repos, state:', {
-      exists: !!user.value,
-      id: user.value?.id,
-      email: user.value?.email,
-      metadata: user.value?.user_metadata,
-      appMetadata: user.value?.app_metadata,
-      providerToken: session?.provider_token
-    })
+    // Get token from either manual auth or OAuth
+    let providerToken: string | null = null
 
-    if (!session?.provider_token) {
+    if (config.public.disableAuth) {
+      // Use manually set token when auth is disabled
+      providerToken = githubToken.value || null
+    } else {
+      // Get token from Supabase session when auth is enabled
+      try {
+        const user = useSupabaseUser()
+        const {
+          data: { session }
+        } = await useSupabaseClient().auth.getSession()
+
+        console.log('🔍 Fetching repos, state:', {
+          exists: !!user.value,
+          id: user.value?.id,
+          email: user.value?.email,
+          metadata: user.value?.user_metadata,
+          appMetadata: user.value?.app_metadata,
+          providerToken: session?.provider_token
+        })
+
+        providerToken = session?.provider_token || null
+      } catch (error) {
+        console.error('Error getting Supabase session:', error)
+        return []
+      }
+    }
+
+    if (!providerToken) {
       console.warn('❌ No provider token found, cannot fetch repos')
       return []
     }
@@ -52,9 +81,10 @@ export const useAppStore = createGlobalState(() => {
       console.log('📡 Fetching repos from GitHub API...')
       const response = await fetch('https://api.github.com/user/repos', {
         headers: {
-          Authorization: `Bearer ${session.provider_token}`,
+          Authorization: `Bearer ${providerToken}`,
           Accept: 'application/vnd.github.v3+json'
-        }
+        },
+        signal: AbortSignal.timeout(10000) // 10 second timeout
       })
 
       if (!response.ok) {
@@ -92,12 +122,22 @@ export const useAppStore = createGlobalState(() => {
     selectedRepository.value = repo
   }
 
+  // Remove item from list
+  const removeItem = (id: string) => {
+    itemList.value = itemList.value.filter(item => item.id !== id)
+  }
+
   return {
     repositories,
     selectedModel,
     selectedRepository,
     fetchRepositories,
     selectRepository,
-    itemList
+    itemList,
+    githubToken,
+    githubUser,
+    setGithubToken,
+    setGithubUser,
+    removeItem
   }
 })
